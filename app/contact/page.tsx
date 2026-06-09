@@ -1,4 +1,35 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+
+type FormState = "idle" | "submitting" | "success";
+
 export default function ContactPage() {
+  const [state, setState] = useState<FormState>("idle");
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setState("submitting");
+    setTimeout(() => {
+      setState("success");
+      setForm({ firstName: "", lastName: "", email: "", subject: "", message: "" });
+    }, 1200);
+  }
+
   return (
     <div className="bg-slate-50 min-h-screen">
 
@@ -79,88 +110,166 @@ export default function ContactPage() {
           {/* Contact form */}
           <div className="md:col-span-2">
             <div className="bg-white rounded-xl border border-slate-200 p-7 md:p-9">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">Send Us a Message</h2>
-              <p className="text-sm text-slate-500 mb-7">
-                Fill in the form below and we'll get back to you as soon as possible.
-              </p>
 
-              <form className="space-y-5">
-                <div className="grid sm:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
-                      First Name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="John"
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
-                      Last Name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Doe"
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="john@example.com"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
-                    Subject
-                  </label>
-                  <select className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition appearance-none">
-                    <option value="">Select a topic…</option>
-                    <option value="general">General Inquiry</option>
-                    <option value="jobs">Job Listing Question</option>
-                    <option value="advertise">Advertising / Partnership</option>
-                    <option value="editorial">Editorial / Content</option>
-                    <option value="technical">Technical Issue</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
-                    Message
-                  </label>
-                  <textarea
-                    rows={5}
-                    placeholder="Write your message here…"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition resize-none"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-4 pt-1">
-                  <p className="text-xs text-slate-400">
-                    By submitting you agree to our{" "}
-                    <a href="/privacy" className="text-blue-700 hover:underline">Privacy Policy</a>.
-                  </p>
-                  <button
-                    type="submit"
-                    className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-blue-700 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition-colors"
-                  >
-                    Send Message
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+              {/* ── SUCCESS STATE ─────────────────────────────────────── */}
+              {state === "success" ? (
+                <div className="flex flex-col items-center justify-center text-center py-12 px-4">
+                  <div className="w-16 h-16 rounded-full bg-green-50 border border-green-200 flex items-center justify-center mb-6">
+                    <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                  </button>
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-900 mb-2">
+                    Message Received!
+                  </h2>
+                  <p className="text-sm text-slate-500 max-w-sm leading-relaxed mb-2">
+                    Thank you for reaching out. We've received your message and
+                    will get back to you within <span className="font-semibold text-slate-700">48 business hours</span>.
+                  </p>
+                  <p className="text-xs text-slate-400 mb-8">
+                    In the meantime, feel free to browse our latest job listings or career guides.
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <Link
+                      href="/jobs"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-600 transition-colors"
+                    >
+                      Browse Jobs
+                    </Link>
+                    <button
+                      onClick={() => setState("idle")}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      Send Another Message
+                    </button>
+                  </div>
                 </div>
-              </form>
+
+              ) : (
+                /* ── FORM STATE ───────────────────────────────────────── */
+                <>
+                  <h2 className="text-lg font-bold text-slate-900 mb-1">Send Us a Message</h2>
+                  <p className="text-sm text-slate-500 mb-7">
+                    Fill in the form below and we'll get back to you as soon as possible.
+                  </p>
+
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
+                          First Name
+                        </label>
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={form.firstName}
+                          onChange={handleChange}
+                          required
+                          placeholder="John"
+                          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
+                          Last Name
+                        </label>
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={form.lastName}
+                          onChange={handleChange}
+                          required
+                          placeholder="Doe"
+                          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={form.email}
+                        onChange={handleChange}
+                        required
+                        placeholder="john@example.com"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
+                        Subject
+                      </label>
+                      <select
+                        name="subject"
+                        value={form.subject}
+                        onChange={handleChange}
+                        required
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition appearance-none"
+                      >
+                        <option value="">Select a topic…</option>
+                        <option value="general">General Inquiry</option>
+                        <option value="jobs">Job Listing Question</option>
+                        <option value="advertise">Advertising / Partnership</option>
+                        <option value="editorial">Editorial / Content</option>
+                        <option value="technical">Technical Issue</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
+                        Message
+                      </label>
+                      <textarea
+                        name="message"
+                        value={form.message}
+                        onChange={handleChange}
+                        required
+                        rows={5}
+                        placeholder="Write your message here…"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition resize-none"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between gap-4 pt-1">
+                      <p className="text-xs text-slate-400">
+                        By submitting you agree to our{" "}
+                        <Link href="/privacy" className="text-blue-700 hover:underline">
+                          Privacy Policy
+                        </Link>.
+                      </p>
+                      <button
+                        type="submit"
+                        disabled={state === "submitting"}
+                        className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-blue-700 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {state === "submitting" ? (
+                          <>
+                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                            </svg>
+                            Sending…
+                          </>
+                        ) : (
+                          <>
+                            Send Message
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                            </svg>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
+
             </div>
           </div>
 
@@ -172,7 +281,7 @@ export default function ContactPage() {
             <p className="text-sm font-semibold text-slate-900">Looking for quick answers?</p>
             <p className="text-xs text-slate-500 mt-0.5">Check our FAQ page — most common questions are already answered there.</p>
           </div>
-          <a
+          <Link
             href="/faq"
             className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-colors"
           >
@@ -180,7 +289,7 @@ export default function ContactPage() {
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
-          </a>
+          </Link>
         </div>
 
       </div>

@@ -1,0 +1,15 @@
+import mongoose, { Schema, model, models } from "mongoose";
+
+const BlogSchema = new Schema(
+  {
+    title: { type: String, required: true },
+    slug: { type: String, required: true, unique: true },
+    description: String,
+    content: String,
+  },
+  { timestamps: true }
+);
+
+const Blog = models.Blog || model("Blog", BlogSchema);
+
+export default Blog;

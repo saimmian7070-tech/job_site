@@ -269,45 +269,63 @@ if (lastUpdated !== today) {
 
           {/* Continue Reading */}
           {relatedPosts.length > 0 && (
-            <div className="mt-12 pt-10 border-t border-gray-200">
-              <h2 className="text-base font-bold text-gray-900 tracking-tight mb-5">
-                Continue Reading
-              </h2>
-              <div className="divide-y divide-gray-100">
-                {relatedPosts.map((item) => (
-                  <Link
-                    key={item._id}
-                    href={`/blog/${item.slug ?? "#"}`}
-                    className="group flex items-start gap-3 py-4 first:pt-0 last:pb-0"
-                  >
-                    <svg
-                      className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors mt-0.5 shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                    <div className="min-w-0">
-                      <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors leading-snug block">
-                        {item.title}
-                      </span>
-                      {item.description && (
-                        <span className="text-xs text-gray-400 mt-0.5 line-clamp-1 block">
-                          {item.description}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+  <div className="mt-14 pt-10 border-t border-gray-200">
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-600 mb-1">
+          Keep Going
+        </p>
+        <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+          Continue Reading
+        </h2>
+      </div>
+      <Link
+        href="/blog"
+        className="text-xs font-semibold text-gray-400 hover:text-blue-600 transition-colors"
+      >
+        All articles →
+      </Link>
+    </div>
+
+    <div className="grid gap-4">
+      {relatedPosts.map((item, i) => (
+        <Link
+          key={item._id}
+          href={`/blog/${item.slug ?? "#"}`}
+          className="group flex items-start gap-5 p-5 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-200 rounded-2xl transition-all"
+        >
+          <div className="shrink-0 w-8 h-8 rounded-full bg-blue-100 group-hover:bg-blue-600 flex items-center justify-center transition-colors">
+            <span className="text-xs font-bold text-blue-600 group-hover:text-white transition-colors">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-blue-500 mb-1 block">
+              Career Guide
+            </span>
+            <p className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 leading-snug transition-colors">
+              {item.title}
+            </p>
+            {item.description && (
+              <p className="mt-1 text-xs text-gray-500 line-clamp-1 leading-relaxed">
+                {item.description}
+              </p>
+            )}
+          </div>
+          <svg
+            className="w-4 h-4 text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all mt-1 shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      ))}
+    </div>
+  </div>
+)}
 
           {/* Back to blog */}
           <div className="mt-10 pt-8 border-t border-gray-100">

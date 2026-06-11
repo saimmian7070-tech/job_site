@@ -3,8 +3,6 @@ import Job from "@/models/Job";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface IJob {
   _id: string;
   title: string;
@@ -19,7 +17,35 @@ interface IJob {
   company?: { name?: string };
 }
 
-// ─── Metadata ────────────────────────────────────────────────────────────────
+function cleanText(str?: string): string {
+  if (!str) return "";
+
+  // Fix Arabic/UTF-8 double-encoding: Ø§ÙÙ -> proper Arabic
+  // These are UTF-8 bytes misread as Latin-1
+  try {
+    const fixed = decodeURIComponent(escape(str));
+    str = fixed;
+  } catch {
+    // not double-encoded, leave as-is
+  }
+
+  return str
+    .replace(/\u00e2\u0080\u0099/g, "\u2019")
+    .replace(/\u00e2\u0080\u0098/g, "\u2018")
+    .replace(/\u00e2\u0080\u009c/g, "\u201c")
+    .replace(/\u00e2\u0080\u009d/g, "\u201d")
+    .replace(/\u00e2\u0080\u0093/g, "\u2013")
+    .replace(/\u00e2\u0080\u0094/g, "\u2014")
+    .replace(/\u00e2\u0080\u00a6/g, "...")
+    .replace(/\u00e2\u0080\u008b/g, "")
+    .replace(/\u00c2\u00a0/g, " ")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+function cleanLocation(loc?: string): string {
+  return loc?.replace(/,\s*$/, "").trim() ?? "";
+}
 
 export async function generateMetadata({
   params,
@@ -27,22 +53,18 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
   try {
     await connectMongo();
     const job = (await Job.findOne({ slug }).lean()) as IJob | null;
     if (!job) return { title: "Job Not Found | Jobs Home Online" };
-
     return {
       title: `${job.title}${job.company?.name ? ` at ${job.company.name}` : ""} | Jobs Home Online`,
-      description: job.description?.slice(0, 160),
+      description: cleanText(job.description)?.slice(0, 160),
     };
   } catch {
     return { title: "Jobs Home Online" };
   }
 }
-
-// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default async function JobPage({
   params,
@@ -50,7 +72,6 @@ export default async function JobPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
   let job: IJob | null = null;
 
   try {
@@ -64,6 +85,14 @@ export default async function JobPage({
 
   if (!job) notFound();
 
+  const cleanedDescription = cleanText(job.description);
+  const cleanedLocation = cleanLocation(job.location);
+
+  const isJunkDescription =
+    !cleanedDescription ||
+    /^posted\s+\d+:\d+/i.test(cleanedDescription) ||
+    cleanedDescription.length < 30;
+
   const postedDate = job.postedAt
     ? new Date(job.postedAt).toLocaleDateString("en-US", {
         month: "long",
@@ -72,31 +101,22 @@ export default async function JobPage({
       })
     : null;
 
-  // Schema.org JobPosting — use jobType from DB, not a hardcoded "Full-time"
   const schema = {
     "@context": "https://schema.org",
     "@type": "JobPosting",
     title: job.title,
-    description: job.description ?? "",
+    description: cleanedDescription ?? "",
     ...(job.jobType && { employmentType: job.jobType }),
     ...(job.company?.name && {
-      hiringOrganization: {
-        "@type": "Organization",
-        name: job.company.name,
-      },
+      hiringOrganization: { "@type": "Organization", name: job.company.name },
     }),
-    ...(job.location && {
+    ...(cleanedLocation && {
       jobLocation: {
         "@type": "Place",
-        address: {
-          "@type": "PostalAddress",
-          addressLocality: job.location,
-        },
+        address: { "@type": "PostalAddress", addressLocality: cleanedLocation },
       },
     }),
-    ...(job.postedAt && {
-      datePosted: new Date(job.postedAt).toISOString(),
-    }),
+    ...(job.postedAt && { datePosted: new Date(job.postedAt).toISOString() }),
     ...(job.applyUrl && { url: job.applyUrl }),
   };
 
@@ -104,13 +124,11 @@ export default async function JobPage({
     <div className="bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-        {/* Schema */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
         />
 
-        {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs text-gray-400 mb-8 font-medium">
           <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
           <span>/</span>
@@ -119,12 +137,10 @@ export default async function JobPage({
           <span className="text-gray-600 truncate max-w-[200px]">{job.title}</span>
         </nav>
 
-        <div className="grid lg:grid-cols-[1fr_280px] gap-8">
+        <div className="flex flex-col lg:flex-row lg:items-start gap-8">
 
-          {/* ── Main ── */}
-          <div>
+          <div className="flex-1 min-w-0">
 
-            {/* Job header card */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 mb-6">
               <span className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-4 block">
                 {job.jobType ?? "Job Opening"}
@@ -134,11 +150,13 @@ export default async function JobPage({
               </h1>
 
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 text-sm text-gray-500">
-                {job.company?.name && <span className="font-medium text-gray-700">{job.company.name}</span>}
-                {job.location && (
+                {job.company?.name && (
+                  <span className="font-medium text-gray-700">{job.company.name}</span>
+                )}
+                {cleanedLocation && (
                   <>
                     <span aria-hidden>·</span>
-                    <span>📍 {job.location}</span>
+                    <span>📍 {cleanedLocation}</span>
                   </>
                 )}
                 {postedDate && (
@@ -149,14 +167,13 @@ export default async function JobPage({
                 )}
               </div>
 
-              {job.description && (
+              {!isJunkDescription && (
                 <p className="mt-5 text-gray-600 text-sm leading-relaxed border-t border-gray-100 pt-5">
-                  {job.description}
+                  {cleanedDescription}
                 </p>
               )}
             </div>
 
-            {/* Job content */}
             {job.content ? (
               <div className="bg-white border border-gray-200 rounded-xl p-6 md:p-8">
                 <div
@@ -171,7 +188,6 @@ export default async function JobPage({
               </div>
             ) : null}
 
-            {/* Back link */}
             <div className="mt-8">
               <Link
                 href="/jobs"
@@ -183,14 +199,11 @@ export default async function JobPage({
                 Back to Jobs
               </Link>
             </div>
-
           </div>
 
-          {/* ── Sidebar ── */}
-          <aside className="space-y-5">
+          <aside className="w-full lg:w-72 shrink-0 space-y-5">
 
-            {/* Apply CTA */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 sticky top-24">
+            <div className="bg-white border border-gray-200 rounded-xl p-6 lg:sticky lg:top-24">
               <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
                 Ready to Apply?
               </p>
@@ -220,10 +233,10 @@ export default async function JobPage({
                     <span className="font-medium text-gray-700">{job.jobType}</span>
                   </div>
                 )}
-                {job.location && (
+                {cleanedLocation && (
                   <div className="flex justify-between">
                     <span className="text-gray-400">Location</span>
-                    <span className="font-medium text-gray-700">{job.location}</span>
+                    <span className="font-medium text-gray-700">{cleanedLocation}</span>
                   </div>
                 )}
                 {job.company?.name && (
@@ -235,13 +248,11 @@ export default async function JobPage({
               </div>
             </div>
 
-            {/* Ad slot */}
             <div className="w-full h-[250px] bg-gray-50 border border-dashed border-gray-200 rounded-xl flex items-center justify-center">
               <span className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Advertisement</span>
             </div>
 
           </aside>
-
         </div>
       </div>
     </div>

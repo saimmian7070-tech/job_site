@@ -25,7 +25,6 @@ export default async function sitemap() {
   }));
 
   const categories = ["it", "design", "marketing", "finance"];
-
   const categoryUrls = categories.map((cat) => ({
     url: `${baseUrl}/categories/${cat}`,
     lastModified: new Date(),
@@ -33,25 +32,26 @@ export default async function sitemap() {
     priority: 0.5,
   }));
 
+  // ✅ Static pages
+  const staticPages = [
+    { url: `${baseUrl}`, priority: 1.0, changeFrequency: "daily" as const },
+    { url: `${baseUrl}/jobs`, priority: 0.9, changeFrequency: "daily" as const },
+    { url: `${baseUrl}/blog`, priority: 0.9, changeFrequency: "daily" as const },
+    { url: `${baseUrl}/categories`, priority: 0.8, changeFrequency: "weekly" as const },
+    { url: `${baseUrl}/companies`, priority: 0.8, changeFrequency: "weekly" as const },
+    { url: `${baseUrl}/locations`, priority: 0.8, changeFrequency: "weekly" as const },
+    { url: `${baseUrl}/about`, priority: 0.6, changeFrequency: "monthly" as const },
+    { url: `${baseUrl}/contact`, priority: 0.6, changeFrequency: "monthly" as const },
+    { url: `${baseUrl}/privacy`, priority: 0.5, changeFrequency: "monthly" as const },
+    { url: `${baseUrl}/terms`, priority: 0.5, changeFrequency: "monthly" as const },
+    { url: `${baseUrl}/faq`, priority: 0.5, changeFrequency: "monthly" as const },
+  ].map((page) => ({
+    ...page,
+    lastModified: new Date(),
+  }));
+
   return [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/jobs`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/blog`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.9,
-    },
+    ...staticPages,
     ...categoryUrls,
     ...jobUrls,
     ...blogUrls,

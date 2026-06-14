@@ -26,6 +26,7 @@ export interface IJob extends Document {
 
   isActive: boolean;
   isFeatured?: boolean;
+  category?: string;
   expiresAt?: Date;
 
   postedAt: Date;
@@ -61,6 +62,7 @@ const JobSchema: Schema<IJob> = new Schema({
   isActive: { type: Boolean, default: true },
   isFeatured: { type: Boolean, default: false },
 
+  category: { type: String },
   expiresAt: { type: Date },
 
   postedAt: { type: Date, default: Date.now },

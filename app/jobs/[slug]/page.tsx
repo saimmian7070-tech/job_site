@@ -19,16 +19,12 @@ interface IJob {
 
 function cleanText(str?: string): string {
   if (!str) return "";
-
-  // Fix Arabic/UTF-8 double-encoding: Ø§ÙÙ -> proper Arabic
-  // These are UTF-8 bytes misread as Latin-1
   try {
     const fixed = decodeURIComponent(escape(str));
     str = fixed;
   } catch {
     // not double-encoded, leave as-is
   }
-
   return str
     .replace(/\u00e2\u0080\u0099/g, "\u2019")
     .replace(/\u00e2\u0080\u0098/g, "\u2018")
@@ -47,11 +43,37 @@ function cleanLocation(loc?: string): string {
   return loc?.replace(/,\s*$/, "").trim() ?? "";
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+function initials(name?: string) {
+  if (!name) return "J";
+  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+}
+
+const AVATAR_COLORS = [
+  "bg-blue-600", "bg-violet-600", "bg-emerald-600",
+  "bg-rose-600", "bg-amber-600", "bg-sky-600",
+];
+
+function avatarColor(str: string) {
+  let sum = 0;
+  for (let i = 0; i < str.length; i++) sum += str.charCodeAt(i);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+}
+
+const JOB_TYPE_COLORS: Record<string, string> = {
+  "remote":     "bg-blue-50 text-blue-700 border-blue-200",
+  "full-time":  "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "part-time":  "bg-amber-50 text-amber-700 border-amber-200",
+  "contract":   "bg-violet-50 text-violet-700 border-violet-200",
+  "freelance":  "bg-rose-50 text-rose-700 border-rose-200",
+  "internship": "bg-sky-50 text-sky-700 border-sky-200",
+};
+
+function jobTypeBadge(type?: string) {
+  const key = (type ?? "").toLowerCase();
+  return JOB_TYPE_COLORS[key] ?? "bg-gray-100 text-gray-600 border-gray-200";
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   try {
     await connectMongo();
@@ -66,11 +88,7 @@ export async function generateMetadata({
   }
 }
 
-export default async function JobPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function JobPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   let job: IJob | null = null;
 
@@ -87,6 +105,9 @@ export default async function JobPage({
 
   const cleanedDescription = cleanText(job.description);
   const cleanedLocation = cleanLocation(job.location);
+  const companyName = job.company?.name;
+  const avatar = initials(companyName);
+  const color = avatarColor(job._id);
 
   const isJunkDescription =
     !cleanedDescription ||
@@ -95,9 +116,7 @@ export default async function JobPage({
 
   const postedDate = job.postedAt
     ? new Date(job.postedAt).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
+        month: "long", day: "numeric", year: "numeric",
       })
     : null;
 
@@ -107,149 +126,199 @@ export default async function JobPage({
     title: job.title,
     description: cleanedDescription ?? "",
     ...(job.jobType && { employmentType: job.jobType }),
-    ...(job.company?.name && {
-      hiringOrganization: { "@type": "Organization", name: job.company.name },
-    }),
-    ...(cleanedLocation && {
-      jobLocation: {
-        "@type": "Place",
-        address: { "@type": "PostalAddress", addressLocality: cleanedLocation },
-      },
-    }),
+    ...(companyName && { hiringOrganization: { "@type": "Organization", name: companyName } }),
+    ...(cleanedLocation && { jobLocation: { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: cleanedLocation } } }),
     ...(job.postedAt && { datePosted: new Date(job.postedAt).toISOString() }),
     ...(job.applyUrl && { url: job.applyUrl }),
   };
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
 
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-        />
+      {/* ── HERO BANNER ─────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-        <nav className="flex items-center gap-2 text-xs text-gray-400 mb-8 font-medium">
-          <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
-          <span>/</span>
-          <Link href="/jobs" className="hover:text-gray-600 transition-colors">Jobs</Link>
-          <span>/</span>
-          <span className="text-gray-600 truncate max-w-[200px]">{job.title}</span>
-        </nav>
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-2 text-xs text-gray-400 mb-7 font-medium">
+            <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
+            <span>/</span>
+            <Link href="/jobs" className="hover:text-gray-600 transition-colors">Jobs</Link>
+            <span>/</span>
+            <span className="text-gray-600 truncate max-w-[180px] sm:max-w-xs">{job.title}</span>
+          </nav>
 
-        <div className="flex flex-col lg:flex-row lg:items-start gap-8">
+          <div className="flex items-start gap-5">
+            {/* Company Avatar */}
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 ${color} shadow-sm`}>
+              <span className="text-lg font-black text-white select-none">{avatar}</span>
+            </div>
 
-          <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
+              {/* Job Type Badge */}
+              {job.jobType && (
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border mb-3 ${jobTypeBadge(job.jobType)}`}>
+                  {job.jobType}
+                </span>
+              )}
 
-            <div className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 mb-6">
-              <span className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-4 block">
-                {job.jobType ?? "Job Opening"}
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+              {/* Title */}
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight tracking-tight">
                 {job.title}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 text-sm text-gray-500">
-                {job.company?.name && (
-                  <span className="font-medium text-gray-700">{job.company.name}</span>
+              {/* Meta row */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-sm text-gray-500">
+                {companyName && (
+                  <span className="font-semibold text-gray-800">{companyName}</span>
                 )}
                 {cleanedLocation && (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span>📍 {cleanedLocation}</span>
-                  </>
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {cleanedLocation}
+                  </span>
                 )}
                 {postedDate && (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span>Posted {postedDate}</span>
-                  </>
+                  <span className="flex items-center gap-1 text-gray-400">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Posted {postedDate}
+                  </span>
                 )}
               </div>
 
+              {/* Short description */}
               {!isJunkDescription && (
-                <p className="mt-5 text-gray-600 text-sm leading-relaxed border-t border-gray-100 pt-5">
+                <p className="mt-4 text-sm text-gray-500 leading-relaxed max-w-2xl">
                   {cleanedDescription}
                 </p>
               )}
             </div>
+          </div>
 
+          {/* Hero Actions */}
+<div className="mt-7 flex flex-wrap gap-3">
+  <Link
+    href="/jobs"
+    className="inline-flex items-center gap-2 px-5 py-3 bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 font-semibold text-sm rounded-xl transition-all"
+  >
+    ← Back to Jobs
+  </Link>
+</div>
+        </div>
+      </div>
+
+      {/* ── MAIN CONTENT ────────────────────────────────────────────── */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+
+          {/* Left: Job Content */}
+          <div className="flex-1 min-w-0">
             {job.content ? (
-              <div className="bg-white border border-gray-200 rounded-xl p-6 md:p-8">
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-sm">
                 <div
-                  className="prose prose-gray prose-sm sm:prose-base max-w-none
-                    prose-headings:font-bold prose-headings:text-gray-900
-                    prose-p:text-gray-600 prose-p:leading-relaxed
-                    prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
-                    prose-strong:text-gray-900
-                    prose-li:text-gray-600"
+                  className="prose prose-gray max-w-none
+                    prose-headings:font-bold prose-headings:text-gray-900 prose-headings:tracking-tight
+                    prose-h3:text-lg prose-h3:mt-8 prose-h3:mb-3 prose-h3:pb-2 prose-h3:border-b prose-h3:border-gray-100
+                    prose-p:text-gray-600 prose-p:leading-relaxed prose-p:my-3
+                    prose-ul:my-3 prose-li:text-gray-600 prose-li:my-1
+                    prose-strong:text-gray-800
+                    prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline"
                   dangerouslySetInnerHTML={{ __html: job.content }}
                 />
               </div>
-            ) : null}
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center text-gray-400 text-sm">
+                No detailed description available for this role.
+              </div>
+            )}
 
-            <div className="mt-8">
-              <Link
-                href="/jobs"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Jobs
-              </Link>
-            </div>
-          </div>
-
-          <aside className="w-full lg:w-72 shrink-0 space-y-5">
-
-            <div className="bg-white border border-gray-200 rounded-xl p-6 lg:sticky lg:top-24">
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
-                Ready to Apply?
-              </p>
-              <p className="text-sm text-gray-500 leading-relaxed mb-5">
-                Review the job details carefully before applying. Make sure your
-                resume reflects the skills mentioned in this role.
-              </p>
-              {job.applyUrl ? (
+            {/* Bottom apply CTA */}
+            {job.applyUrl && (
+              <div className="mt-6 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <p className="text-white font-bold text-base">Interested in this role?</p>
+                  <p className="text-blue-100 text-sm mt-0.5">Take the next step and submit your application today.</p>
+                </div>
                 <a
                   href={job.applyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block w-full text-center bg-blue-600 hover:bg-blue-700 transition-colors text-white font-semibold text-sm rounded-lg px-5 py-3"
+                  className="shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-blue-50 text-blue-700 font-bold text-sm rounded-xl shadow-sm transition-all"
                 >
-                  Apply for This Role →
+                  Apply Now →
                 </a>
-              ) : (
-                <p className="text-xs text-gray-400 text-center">
-                  Application link not available.
-                </p>
-              )}
+              </div>
+            )}
+          </div>
 
-              <div className="mt-5 pt-5 border-t border-gray-100 space-y-2.5 text-xs text-gray-500">
+          {/* Right: Sidebar */}
+          <aside className="w-full lg:w-72 shrink-0 space-y-5 lg:sticky lg:top-24">
+
+            {/* Job Details Card */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-4">Job Details</p>
+              <div className="space-y-3">
                 {job.jobType && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Job Type</span>
-                    <span className="font-medium text-gray-700">{job.jobType}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400 font-medium">Job Type</span>
+                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-full border ${jobTypeBadge(job.jobType)}`}>{job.jobType}</span>
                   </div>
                 )}
                 {cleanedLocation && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Location</span>
-                    <span className="font-medium text-gray-700">{cleanedLocation}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400 font-medium">Location</span>
+                    <span className="text-xs font-semibold text-gray-700 text-right max-w-[150px]">{cleanedLocation}</span>
                   </div>
                 )}
-                {job.company?.name && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Company</span>
-                    <span className="font-medium text-gray-700">{job.company.name}</span>
+                {companyName && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400 font-medium">Company</span>
+                    <span className="text-xs font-semibold text-gray-700 text-right max-w-[150px]">{companyName}</span>
+                  </div>
+                )}
+                {postedDate && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400 font-medium">Posted</span>
+                    <span className="text-xs font-semibold text-gray-700">{postedDate}</span>
                   </div>
                 )}
               </div>
+
+              {job.applyUrl && (
+                <a
+                  href={job.applyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 block w-full text-center bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold text-sm rounded-xl px-5 py-3"
+                >
+                  Apply for This Role →
+                </a>
+              )}
             </div>
 
-            <div className="w-full h-[250px] bg-gray-50 border border-dashed border-gray-200 rounded-xl flex items-center justify-center">
-              <span className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Advertisement</span>
+            {/* Browse more */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Browse More</p>
+              <div className="space-y-2">
+                <Link href="/jobs" className="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                  All Jobs <span className="text-gray-300">→</span>
+                </Link>
+                <Link href="/jobs?type=remote" className="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                  Remote Jobs <span className="text-gray-300">→</span>
+                </Link>
+                <Link href="/jobs?type=full-time" className="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                  Full-Time Jobs <span className="text-gray-300">→</span>
+                </Link>
+                <Link href="/jobs?type=contract" className="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                  Contract Jobs <span className="text-gray-300">→</span>
+                </Link>
+              </div>
             </div>
 
           </aside>

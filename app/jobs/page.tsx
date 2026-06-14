@@ -1,7 +1,8 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import connectMongo from "@/lib/mongodb";
 import Job from "@/models/Job";
-import NewsletterSection from "@/app/components/NewsletterSection";
+import BookmarkButton from "./BookmarkButton";
 
 interface IJob {
   _id: string;
@@ -10,144 +11,199 @@ interface IJob {
   location?: string;
   jobType?: string;
   description?: string;
+  postedAt?: string | Date;
+  category?: string;
   company?: { name?: string };
 }
 
 export const metadata = {
-  title: "Browse Jobs | Jobs Home Online",
-  description: "Browse the latest remote and global job listings across tech, marketing, design, finance, and more.",
+  title: "Browse Jobs | JobsHome",
+  description:
+    "Browse the latest remote and global job listings across tech, marketing, design, finance, and more.",
 };
 
 const JOB_TYPES = [
-  "Remote", "Full-Time", "Part-Time", "Contract", "Freelance", "Internship", "Entry Level",
+  "All types",
+  "Remote",
+  "Full-Time",
+  "Part-Time",
+  "Contract",
+  "Freelance",
+  "Internship",
+  "Entry Level",
 ];
-
-const JOB_TYPE_COLORS: Record<string, string> = {
-  "remote":      "bg-blue-50 text-blue-700 border-blue-100",
-  "full-time":   "bg-emerald-50 text-emerald-700 border-emerald-100",
-  "part-time":   "bg-amber-50 text-amber-700 border-amber-100",
-  "contract":    "bg-violet-50 text-violet-700 border-violet-100",
-  "freelance":   "bg-rose-50 text-rose-700 border-rose-100",
-  "internship":  "bg-sky-50 text-sky-700 border-sky-100",
-  "entry level": "bg-orange-50 text-orange-700 border-orange-100",
-};
-
-function jobTypeBadge(type: string) {
-  const key = type.toLowerCase();
-  return JOB_TYPE_COLORS[key] ?? "bg-gray-100 text-gray-600 border-gray-200";
-}
 
 function initials(name?: string) {
   if (!name) return "J";
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }
 
-const AVATAR_COLORS = [
-  "bg-blue-600", "bg-violet-600", "bg-emerald-600",
-  "bg-rose-600",  "bg-amber-600",  "bg-sky-600",
+const AVATAR_BG = [
+  "#2563EB",
+  "#7C3AED",
+  "#0F766E",
+  "#B45309",
+  "#BE185D",
+  "#0369A1",
 ];
 
-function avatarColor(str: string) {
+function avatarBg(str: string) {
   let sum = 0;
   for (let i = 0; i < str.length; i++) sum += str.charCodeAt(i);
-  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+  return AVATAR_BG[sum % AVATAR_BG.length];
+}
+
+function jobTypePillStyle(type: string): {
+  bg: string;
+  color: string;
+  border: string;
+} {
+  const t = type.toLowerCase();
+  if (t.includes("remote"))
+    return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" };
+  if (t.includes("full"))
+    return { bg: "#F0FDF4", color: "#166534", border: "#BBF7D0" };
+  if (t.includes("part"))
+    return { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" };
+  if (t.includes("contract"))
+    return { bg: "#F5F3FF", color: "#5B21B6", border: "#DDD6FE" };
+  if (t.includes("freelance"))
+    return { bg: "#FFF1F2", color: "#9F1239", border: "#FECDD3" };
+  if (t.includes("internship"))
+    return { bg: "#F0F9FF", color: "#0C4A6E", border: "#BAE6FD" };
+  if (t.includes("entry"))
+    return { bg: "#FFF7ED", color: "#9A3412", border: "#FED7AA" };
+  return { bg: "#F8FAFC", color: "#475569", border: "#E2E8F0" };
+}
+
+function timeAgo(date: string | Date) {
+  const diff = Math.floor(
+    (Date.now() - new Date(date).getTime()) / 86400000
+  );
+  if (diff === 0) return "Today";
+  if (diff === 1) return "1 day ago";
+  if (diff < 7) return `${diff} days ago`;
+  if (diff < 14) return "1 week ago";
+  return `${Math.floor(diff / 7)} weeks ago`;
 }
 
 export default async function JobsPage({ searchParams }: any) {
-  const params     = await searchParams;
-  const page       = Math.max(1, Number(params.page || 1));
-  const keyword    = (params.q    ?? "").trim();
-  const location   = (params.loc  ?? "").trim();
-  const jobType    = (params.type ?? "").toLowerCase().trim();
-  const limit      = 20;
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page || 1));
+  const keyword = (params.q ?? "").trim();
+  const location = (params.loc ?? "").trim();
+  const jobType = (params.type ?? "").toLowerCase().trim();
+  const limit = 20;
 
   let jobs: IJob[] = [];
-  let totalJobs    = 0;
+  let totalJobs = 0;
+  let remoteCount = 0;
+  let engineeringCount = 0;
+  let todayCount = 0;
+  let typeCountMap: Record<string, number> = {};
+  let categoryCountMap: Record<string, number> = {};
 
   try {
     await connectMongo();
+    const typeCounts = await Job.aggregate([
+      { $group: { _id: { $toLower: "$jobType" }, count: { $sum: 1 } } }
+    ]);
+    typeCounts.forEach((t: any) => { typeCountMap[t._id] = t.count; });
 
-    // Build a compound query — all active filters must match (AND logic)
+    const categoryCounts = await Job.aggregate([
+      { $group: { _id: "$category", count: { $sum: 1 } } }
+    ]);
+    categoryCounts.forEach((c: any) => { categoryCountMap[c._id] = c.count; });
+
+    const remoteCount = await Job.countDocuments({ jobType: { $regex: "remote", $options: "i" } });
+    const engineeringCount = await Job.countDocuments({ category: "Engineering" });
+    const todayCount = await Job.countDocuments({ postedAt: { $gte: new Date(new Date().setHours(0,0,0,0)) } });
+
     const query: any = {};
     const andClauses: any[] = [];
 
-    // 1. Keyword: matches title, company name, or description
     if (keyword) {
       andClauses.push({
         $or: [
-          { title:             { $regex: keyword,  $options: "i" } },
-          { description:       { $regex: keyword,  $options: "i" } },
-          { "company.name":    { $regex: keyword,  $options: "i" } },
+          { title: { $regex: keyword, $options: "i" } },
+          { description: { $regex: keyword, $options: "i" } },
+          { "company.name": { $regex: keyword, $options: "i" } },
         ],
       });
     }
-
-    // 2. Location: matches location field or "remote" in jobType when user types remote
+    andClauses.push({
+    title: { $regex: "^[\\x00-\\x7F\\xC0-\\xFF\\s]+$", $options: "i" }
+    });
     if (location) {
       andClauses.push({
         $or: [
           { location: { $regex: location, $options: "i" } },
-          { jobType:  { $regex: location, $options: "i" } },
+          { jobType: { $regex: location, $options: "i" } },
         ],
       });
     }
-
-    // 3. Job type filter pill
     if (jobType) {
       andClauses.push({ jobType: { $regex: jobType, $options: "i" } });
     }
-
     if (andClauses.length > 0) query.$and = andClauses;
 
     totalJobs = await Job.countDocuments(query);
-
     const raw = await Job.find(query)
-      .sort({ postedAt: -1 })
+      .sort({ score: 1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
-
     jobs = raw.map((j: any) => ({ ...j, _id: j._id.toString() }));
   } catch (err) {
     console.error("JobsPage DB error:", err);
   }
 
   const totalPages = Math.max(1, Math.ceil(totalJobs / limit));
-  const showing    = jobs.length;
-  const from       = totalJobs === 0 ? 0 : (page - 1) * limit + 1;
-  const to         = from + showing - 1;
+  const from = totalJobs === 0 ? 0 : (page - 1) * limit + 1;
+  const to = from + jobs.length - 1;
 
-  // Active filters (for dismissible chips)
   const activeFilters: { label: string; removeKey: string }[] = [];
-  if (keyword)  activeFilters.push({ label: `"${keyword}"`,          removeKey: "q"    });
-  if (location) activeFilters.push({ label: `📍 ${location}`,        removeKey: "loc"  });
-  if (jobType)  activeFilters.push({ label: jobType.charAt(0).toUpperCase() + jobType.slice(1), removeKey: "type" });
+  if (keyword) activeFilters.push({ label: `"${keyword}"`, removeKey: "q" });
+  if (location)
+    activeFilters.push({ label: location, removeKey: "loc" });
+  if (jobType)
+    activeFilters.push({
+      label: jobType.charAt(0).toUpperCase() + jobType.slice(1),
+      removeKey: "type",
+    });
 
   function removeFilterHref(key: string) {
     const p = new URLSearchParams();
-    if (key !== "q"    && keyword)  p.set("q",    keyword);
-    if (key !== "loc"  && location) p.set("loc",  location);
-    if (key !== "type" && jobType)  p.set("type", jobType);
+    if (key !== "q" && keyword) p.set("q", keyword);
+    if (key !== "loc" && location) p.set("loc", location);
+    if (key !== "type" && jobType) p.set("type", jobType);
     const qs = p.toString();
     return `/jobs${qs ? `?${qs}` : ""}`;
   }
 
   function pageHref(p: number) {
     const pr = new URLSearchParams();
-    if (keyword)  pr.set("q",    keyword);
-    if (location) pr.set("loc",  location);
-    if (jobType)  pr.set("type", jobType);
-    if (p > 1)    pr.set("page", String(p));
+    if (keyword) pr.set("q", keyword);
+    if (location) pr.set("loc", location);
+    if (jobType) pr.set("type", jobType);
+    if (p > 1) pr.set("page", String(p));
     const qs = pr.toString();
     return `/jobs${qs ? `?${qs}` : ""}`;
   }
 
   function typeHref(t: string) {
     const p = new URLSearchParams();
-    if (keyword)  p.set("q",    keyword);
-    if (location) p.set("loc",  location);
-    const lc = t.toLowerCase();
-    if (lc !== jobType) p.set("type", lc);   // toggle off if already active
+    if (keyword) p.set("q", keyword);
+    if (location) p.set("loc", location);
+    if (t !== "All types") {
+      const lc = t.toLowerCase();
+      if (lc !== jobType) p.set("type", lc);
+    }
     const qs = p.toString();
     return `/jobs${qs ? `?${qs}` : ""}`;
   }
@@ -158,107 +214,414 @@ export default async function JobsPage({ searchParams }: any) {
   } else {
     pageNums.push(1);
     if (page > 3) pageNums.push("…");
-    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pageNums.push(i);
+    for (
+      let i = Math.max(2, page - 1);
+      i <= Math.min(totalPages - 1, page + 1);
+      i++
+    )
+      pageNums.push(i);
     if (page < totalPages - 2) pageNums.push("…");
     pageNums.push(totalPages);
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#F0F2F5",
+        fontFamily:
+          '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      }}
+    >
+      {/* Global hover styles for job cards — no client JS needed */}
+      <style>{`
+        .job-card:hover { border-color: #BFDBFE !important; box-shadow: 0 2px 8px rgba(37,99,235,0.07) !important; }
+        .job-card--featured:hover { border-color: #93C5FD !important; }
+        summary { list-style: none; }
+        summary::-webkit-details-marker { display: none; }
+      `}</style>
 
-      {/* ── TOP SEARCH HERO ──────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-0 md:pt-12">
+      {/* ── HERO / SEARCH BAR ───────────────────────────────────────── */}
+      <div
+        style={{
+          background: "#FFFFFF",
+          borderBottom: "1px solid #E5E7EB",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1080,
+            margin: "0 auto",
+            padding: "36px 24px 0",
+          }}
+        >
+          {/* Top row: heading + KPI stats */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 24,
+              marginBottom: 20,
+              flexWrap: "wrap",
+            }}
+          >
+            {/* Heading block */}
+            <div>
+              <h1
+                style={{
+                  fontSize: 26,
+                  fontWeight: 800,
+                  color: "#111827",
+                  letterSpacing: "-0.5px",
+                  margin: "0 0 6px",
+                  lineHeight: 1.2,
+                }}
+              >
+                Find your next role.
+              </h1>
+              <p style={{ fontSize: 13, color: "#6B7280", margin: 0 }}>
+                {totalJobs > 0
+                  ? `${totalJobs.toLocaleString()} open positions across tech, design, marketing, finance and more.`
+                  : "Remote and global opportunities across every industry — apply in one click."}
+              </p>
+            </div>
 
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-blue-600 mb-2">
-            Job Listings
-          </p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight tracking-tight mb-1">
-            Find Your Next Role
-          </h1>
-          <p className="text-sm text-gray-500 mb-6 max-w-md leading-relaxed">
-            Remote and global opportunities across every industry — updated daily.
-          </p>
+            {/* KPI stats */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 24,
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ textAlign: "right" }}>
+                <p
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: "#111827",
+                    margin: "0 0 2px",
+                    letterSpacing: "-0.3px",
+                  }}
+                >
+                  
+                  {remoteCount} 
+                
+                </p>
+                <p
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    color: "#9CA3AF",
+                    margin: 0,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Remote roles
+                </p>
+              </div>
+              <div
+                style={{
+                  width: 1,
+                  height: 32,
+                  background: "#E5E7EB",
+                }}
+              />
+              <div style={{ textAlign: "right" }}>
+                <p
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: "#111827",
+                    margin: "0 0 2px",
+                    letterSpacing: "-0.3px",
+                  }}
+                >
+                  {engineeringCount}
+                </p>
+                <p
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    color: "#9CA3AF",
+                    margin: 0,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Engineering
+                </p>
+              </div>
+              <div
+                style={{
+                  width: 1,
+                  height: 32,
+                  background: "#E5E7EB",
+                }}
+              />
+              <div style={{ textAlign: "right" }}>
+                <p
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: "#16A34A",
+                    margin: "0 0 2px",
+                    letterSpacing: "-0.3px",
+                  }}
+                >
+                  +{todayCount}
+                </p>
+                <p
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    color: "#9CA3AF",
+                    margin: 0,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Added today
+                </p>
+              </div>
+            </div>
+          </div>
 
-          {/* ── SEARCH BAR (like Indeed) ─────────────────────────────── */}
-          <form method="GET" action="/jobs" className="flex flex-col sm:flex-row gap-0 sm:gap-0 rounded-xl border border-gray-300 bg-white shadow-sm overflow-hidden focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-
-            {/* What / keyword */}
-            <div className="flex items-center gap-2 flex-1 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
-              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          {/* Search bar */}
+          <form
+            method="GET"
+            action="/jobs"
+            style={{
+              display: "flex",
+              border: "1.5px solid #E5E7EB",
+              borderRadius: 10,
+              overflow: "hidden",
+              background: "#FFFFFF",
+            }}
+          >
+            {/* Keyword input */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                flex: 1,
+                padding: "0 16px",
+                borderRight: "1px solid #E5E7EB",
+              }}
+            >
+              <svg
+                width="15"
+                height="15"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="#9CA3AF"
+                strokeWidth={2}
+                style={{ flexShrink: 0 }}
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+                />
               </svg>
               <input
                 type="text"
                 name="q"
                 defaultValue={keyword}
                 placeholder="Job title, keyword, or company"
-                className="flex-1 text-sm text-gray-800 placeholder-gray-400 outline-none bg-transparent"
+                aria-label="Search by job title, keyword, or company"
+                style={{
+                  flex: 1,
+                  border: "none",
+                  outline: "none",
+                  fontSize: 13,
+                  color: "#111827",
+                  background: "transparent",
+                  padding: "14px 0",
+                }}
               />
               {keyword && (
-                <a href={removeFilterHref("q")} className="text-gray-300 hover:text-gray-500 transition-colors ml-1">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <a
+                  href={removeFilterHref("q")}
+                  aria-label="Clear keyword filter"
+                  style={{ color: "#D1D5DB", textDecoration: "none" }}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </a>
               )}
             </div>
 
-            {/* Where / location */}
-            <div className="flex items-center gap-2 flex-1 px-4 py-3 border-b sm:border-b-0 sm:border-r border-gray-200">
-              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            {/* Location input */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                flex: 1,
+                padding: "0 16px",
+                borderRight: "1px solid #E5E7EB",
+              }}
+            >
+              <svg
+                width="15"
+                height="15"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="#9CA3AF"
+                strokeWidth={2}
+                style={{ flexShrink: 0 }}
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
               </svg>
               <input
                 type="text"
                 name="loc"
                 defaultValue={location}
                 placeholder="City, country, or Remote"
-                className="flex-1 text-sm text-gray-800 placeholder-gray-400 outline-none bg-transparent"
+                aria-label="Search by location"
+                style={{
+                  flex: 1,
+                  border: "none",
+                  outline: "none",
+                  fontSize: 13,
+                  color: "#111827",
+                  background: "transparent",
+                  padding: "14px 0",
+                }}
               />
               {location && (
-                <a href={removeFilterHref("loc")} className="text-gray-300 hover:text-gray-500 transition-colors ml-1">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <a
+                  href={removeFilterHref("loc")}
+                  aria-label="Clear location filter"
+                  style={{ color: "#D1D5DB", textDecoration: "none" }}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </a>
               )}
             </div>
 
-            {/* Hidden: preserve type */}
             {jobType && <input type="hidden" name="type" value={jobType} />}
 
-            {/* Search button */}
             <button
               type="submit"
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold transition-colors shrink-0"
+              style={{
+                padding: "0 28px",
+                background: "#2563EB",
+                color: "#FFFFFF",
+                border: "none",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                flexShrink: 0,
+              }}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+              <svg
+                width="14"
+                height="14"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+                />
               </svg>
-              <span className="hidden sm:inline">Search</span>
+              Search
             </button>
           </form>
 
-          {/* ── JOB TYPE FILTER PILLS ────────────────────────────────── */}
-          <div className="flex items-center gap-2 mt-4 pb-4 flex-wrap">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mr-1">Type:</span>
+          {/* Filter tab bar */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              marginTop: 16,
+              paddingTop: 16,
+              borderTop: "1px solid #E5E7EB",
+              overflowX: "auto",
+              flexWrap: "nowrap",
+            }}
+            role="tablist"
+            aria-label="Filter by job type"
+          >
             {JOB_TYPES.map((t) => {
-              const isActive = t.toLowerCase() === jobType;
+              const isAll = t === "All types";
+              const isActive = isAll
+                ? !jobType
+                : t.toLowerCase() === jobType;
               return (
                 <Link
                   key={t}
                   href={typeHref(t)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                    isActive
-                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50"
-                  }`}
+                  role="tab"
+                  aria-selected={isActive}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: "8px 8px 0 0",
+                    fontSize: 13,
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? "#2563EB" : "#6B7280",
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                    borderBottom: isActive
+                      ? "2px solid #2563EB"
+                      : "2px solid transparent",
+                    marginBottom: -1,
+                    transition: "color 0.15s",
+                  }}
                 >
-                  {isActive && (
-                    <span className="mr-1 opacity-80">✕</span>
-                  )}
                   {t}
                 </Link>
               );
@@ -267,202 +630,1088 @@ export default async function JobsPage({ searchParams }: any) {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* ── BODY ────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          maxWidth: 1080,
+          margin: "0 auto",
+          padding: "28px 24px",
+          display: "flex",
+          gap: 20,
+          alignItems: "flex-start",
+        }}
+      >
+        {/* ── SIDEBAR ─────────────────────────────────────────────── */}
+        <aside
+          aria-label="Job filters"
+          style={{
+            width: 212,
+            flexShrink: 0,
+            position: "sticky",
+            top: 76,
+            display: "none",
+          }}
+          className="lg-sidebar"
+        >
+          <style>{`
+            @media (min-width: 1024px) { .lg-sidebar { display: block !important; } }
+          `}</style>
+          <div
+            style={{
+              background: "#FFFFFF",
+              border: "1px solid #E5E7EB",
+              borderRadius: 10,
+              overflow: "hidden",
+            }}
+          >
+            {/* Job Type */}
+            <details open>
+              <summary
+                style={{
+                  padding: "12px 16px",
+                  borderBottom: "1px solid #F3F4F6",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#374151",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.07em",
+                  cursor: "pointer",
+                  listStyle: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  userSelect: "none",
+                }}
+              >
+                Job Type
+                <svg
+                  width="12"
+                  height="12"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="#9CA3AF"
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </summary>
+              <div style={{ padding: "10px 16px 14px" }}>
+                {[
+                  { label: "Full-Time",  count: typeCountMap["full-time"]  ?? 0 },
+                  { label: "Remote",     count: typeCountMap["remote"]     ?? 0 },
+                  { label: "Part-Time",  count: typeCountMap["part-time"]  ?? 0 },
+                  { label: "Contract",   count: typeCountMap["contract"]   ?? 0 },
+                  { label: "Internship", count: typeCountMap["internship"] ?? 0 },
+                ].map((item) => {
+                  const isChecked = item.label.toLowerCase() === jobType;
+                  return (
+                    <Link
+                      key={item.label}
+                      href={typeHref(item.label)}
+                      aria-pressed={isChecked}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "5px 0",
+                        textDecoration: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 9,
+                        }}
+                      >
+                        <div
+                          aria-hidden="true"
+                          style={{
+                            width: 15,
+                            height: 15,
+                            borderRadius: 4,
+                            border: isChecked
+                              ? "1.5px solid #2563EB"
+                              : "1.5px solid #D1D5DB",
+                            background: isChecked ? "#2563EB" : "#FFFFFF",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {isChecked && (
+                            <svg
+                              width="9"
+                              height="9"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="#FFFFFF"
+                              strokeWidth={3}
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 13,
+                            color: isChecked ? "#1D4ED8" : "#4B5563",
+                            fontWeight: isChecked ? 600 : 400,
+                          }}
+                        >
+                          {item.label}
+                        </span>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: "#9CA3AF",
+                          background: "#F9FAFB",
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                        }}
+                      >
+                        {item.count}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </details>
 
-        {/* ── ACTIVE FILTER CHIPS + RESULT COUNT ──────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-          <div className="flex items-center gap-2 flex-wrap">
-            {totalJobs > 0 ? (
-              <p className="text-sm font-semibold text-gray-700">
-                <span className="text-blue-600">{totalJobs.toLocaleString()}</span> job{totalJobs !== 1 ? "s" : ""} found
-                {totalPages > 1 && (
-                  <span className="text-gray-400 font-normal ml-1">
-                    · showing {from}–{to}
-                  </span>
-                )}
-              </p>
-            ) : (
-              <p className="text-sm font-semibold text-gray-500">No jobs found</p>
-            )}
+            {/* Category */}
+            <details open style={{ borderTop: "1px solid #F3F4F6" }}>
+              <summary
+                style={{
+                  padding: "12px 16px",
+                  borderBottom: "1px solid #F3F4F6",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#374151",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.07em",
+                  cursor: "pointer",
+                  listStyle: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  userSelect: "none",
+                }}
+              >
+                Category
+                <svg
+                  width="12"
+                  height="12"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="#9CA3AF"
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </summary>
+              <div style={{ padding: "10px 16px 14px" }}>
+                {[
+                  { label: "Engineering", count: categoryCountMap["Engineering"] ?? 0 },
+                  { label: "Sales",       count: categoryCountMap["Sales"]       ?? 0 },
+                  { label: "Design",      count: categoryCountMap["Design"]      ?? 0 },
+                  { label: "Marketing",   count: categoryCountMap["Marketing"]   ?? 0 },
+                  { label: "Finance",     count: categoryCountMap["Finance"]     ?? 0 },
+                  { label: "Customer",    count: categoryCountMap["Customer"]    ?? 0 },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "5px 0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                      }}
+                    >
+                      <div
+                        aria-hidden="true"
+                        style={{
+                          width: 15,
+                          height: 15,
+                          borderRadius: 4,
+                          border: "1.5px solid #D1D5DB",
+                          background: "#FFFFFF",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span style={{ fontSize: 13, color: "#4B5563" }}>
+                        {item.label}
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: "#9CA3AF",
+                        background: "#F9FAFB",
+                        padding: "2px 6px",
+                        borderRadius: 4,
+                      }}
+                    >
+                      {item.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </details>
+
+            {/* Experience */}
+            <details open style={{ borderTop: "1px solid #F3F4F6" }}>
+              <summary
+                style={{
+                  padding: "12px 16px",
+                  borderBottom: "1px solid #F3F4F6",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#374151",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.07em",
+                  cursor: "pointer",
+                  listStyle: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  userSelect: "none",
+                }}
+              >
+                Experience
+                <svg
+                  width="12"
+                  height="12"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="#9CA3AF"
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </summary>
+              <div style={{ padding: "10px 16px 14px" }}>
+                {[
+                  { label: "Entry Level", count: typeCountMap["entry level"] ?? 0 },
+                  { label: "Mid Level",   count: typeCountMap["mid level"]   ?? 0 },
+                  { label: "Senior",      count: typeCountMap["senior"]      ?? 0 },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "5px 0",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                      }}
+                    >
+                      <div
+                        aria-hidden="true"
+                        style={{
+                          width: 15,
+                          height: 15,
+                          borderRadius: 4,
+                          border: "1.5px solid #D1D5DB",
+                          background: "#FFFFFF",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span style={{ fontSize: 13, color: "#4B5563" }}>
+                        {item.label}
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: "#9CA3AF",
+                        background: "#F9FAFB",
+                        padding: "2px 6px",
+                        borderRadius: 4,
+                      }}
+                    >
+                      {item.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </details>
           </div>
+        </aside>
 
-          {/* Active filter chips (dismissible) */}
-          {activeFilters.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
+        {/* ── MAIN FEED ──────────────────────────────────────────────── */}
+        <main aria-label="Job listings" style={{ flex: 1, minWidth: 0 }}>
+          {/* Result count + sort + active filters */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              marginBottom: 14,
+              flexWrap: "wrap",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              {totalJobs > 0 ? (
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "#6B7280",
+                    margin: 0,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: "#2563EB",
+                    }}
+                  >
+                    {totalJobs.toLocaleString()}
+                  </span>{" "}
+                  job{totalJobs !== 1 ? "s" : ""} found
+                  {totalPages > 1 && (
+                    <span style={{ color: "#9CA3AF", marginLeft: 6 }}>
+                      · showing {from}–{to}
+                    </span>
+                  )}
+                </p>
+              ) : (
+                <p
+                  style={{ fontSize: 13, color: "#6B7280", margin: 0 }}
+                >
+                  No jobs found
+                </p>
+              )}
+
               {activeFilters.map((f) => (
                 <Link
                   key={f.removeKey}
                   href={removeFilterHref(f.removeKey)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold rounded-full hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all group"
-                  title={`Remove filter: ${f.label}`}
+                  aria-label={`Remove filter ${f.label}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "3px 10px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    borderRadius: 20,
+                    textDecoration: "none",
+                    background: "#EFF6FF",
+                    border: "1px solid #BFDBFE",
+                    color: "#1D4ED8",
+                  }}
                 >
                   {f.label}
-                  <svg className="w-3 h-3 opacity-60 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    width="10"
+                    height="10"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </Link>
               ))}
+
               {activeFilters.length > 1 && (
                 <Link
                   href="/jobs"
-                  className="text-xs text-gray-400 hover:text-red-500 font-semibold transition-colors underline underline-offset-2"
+                  style={{
+                    fontSize: 12,
+                    color: "#9CA3AF",
+                    textDecoration: "underline",
+                    fontWeight: 600,
+                  }}
                 >
                   Clear all
                 </Link>
               )}
             </div>
-          )}
-        </div>
 
-        {/* ── JOB LIST ────────────────────────────────────────────────── */}
-        {jobs.length === 0 ? (
-          <div className="py-24 text-center bg-white rounded-2xl border border-gray-200">
-            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
-              </svg>
+            {/* Sort */}
+            <select
+              aria-label="Sort jobs by"
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#374151",
+                border: "1px solid #E5E7EB",
+                borderRadius: 7,
+                padding: "6px 10px",
+                background: "#FFFFFF",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <option>Most recent</option>
+              <option>Most relevant</option>
+              <option>Salary: high to low</option>
+            </select>
+          </div>
+
+          {/* Empty state */}
+          {jobs.length === 0 ? (
+            <div
+              style={{
+                padding: "80px 24px",
+                textAlign: "center",
+                background: "#FFFFFF",
+                borderRadius: 10,
+                border: "1px solid #E5E7EB",
+              }}
+            >
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 10,
+                  background: "#F9FAFB",
+                  border: "1px solid #E5E7EB",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 14px",
+                }}
+                aria-hidden="true"
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="#D1D5DB"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"
+                  />
+                </svg>
+              </div>
+              <p
+                style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: "#374151",
+                  margin: "0 0 6px",
+                }}
+              >
+                No matching jobs found
+              </p>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "#9CA3AF",
+                  margin: "0 0 20px",
+                  maxWidth: 280,
+                  marginLeft: "auto",
+                  marginRight: "auto",
+                  lineHeight: 1.6,
+                }}
+              >
+                {activeFilters.length > 0
+                  ? "Try adjusting your search terms or removing some filters."
+                  : "New roles are added daily — check back soon."}
+              </p>
+              {activeFilters.length > 0 && (
+                <Link
+                  href="/jobs"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "9px 18px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "#FFFFFF",
+                    textDecoration: "none",
+                    background: "#2563EB",
+                  }}
+                >
+                  Clear all filters
+                </Link>
+              )}
             </div>
-            <p className="text-sm font-semibold text-gray-700 mb-1">No matching jobs found</p>
-            <p className="text-sm text-gray-400 mb-5 max-w-xs mx-auto">
-              {activeFilters.length > 0
-                ? "Try adjusting your search terms, location, or job type filters."
-                : "New roles are added daily — check back soon."}
-            </p>
-            {activeFilters.length > 0 && (
-              <Link href="/jobs" className="text-sm font-semibold text-blue-600 hover:underline">
-                Clear all filters →
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {jobs.map((job) => {
-              const name   = job.company?.name;
-              const avatar = initials(name);
-              const color  = avatarColor(job._id);
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {jobs.map((job, index) => {
+                const name = job.company?.name;
+                const avatar = initials(name);
+                const bg = avatarBg(job._id);
+                const pill = job.jobType
+                  ? jobTypePillStyle(job.jobType)
+                  : null;
+                const daysSincePosted = job.postedAt
+                  ? Math.floor(
+                      (Date.now() - new Date(job.postedAt).getTime()) /
+                        86400000
+                    )
+                  : 999;
+                const isNew = daysSincePosted === 0;
+                const isFeatured = index % 7 === 3; // Example: every 7th card is "featured"
 
-              return (
-                <Link
-                  key={job._id}
-                  href={`/jobs/${job.slug ?? "#"}`}
-                  className="group flex items-start gap-4 bg-white border border-gray-200 rounded-2xl px-5 py-5 hover:border-blue-300 hover:shadow-md transition-all"
-                >
-                  {/* Avatar */}
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
-                    <span className="text-xs font-black text-white select-none">{avatar}</span>
-                  </div>
+                return (
+                  <Fragment key={job._id}>
+                    <article
+                      aria-label={`${job.title} at ${name ?? "unknown company"}`}
+                      style={{ position: "relative" }}
+                    >
+                      <Link
+                        href={`/jobs/${job.slug ?? "#"}`}
+                        className={isFeatured ? "job-card job-card--featured" : "job-card"}
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 14,
+                          background: isFeatured ? "#FAFBFF" : "#FFFFFF",
+                          borderRadius: 10,
+                          padding: "16px 18px",
+                          border: `1px solid ${isFeatured ? "#DBEAFE" : "#E5E7EB"}`,
+                          textDecoration: "none",
+                          transition:
+                            "border-color 0.15s, box-shadow 0.15s",
+                        }}
+                      >
+                        {/* Company logo / initials */}
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${(name ?? "company").toLowerCase().replace(/\s+/g, "")}.com&sz=64`}
+                          alt={name ?? ""}
+                          style={{
+                            width: 40,
+                            height: 40,
+                            objectFit: "contain",
+                            borderRadius: 8,
+                            flexShrink: 0,
+                            marginTop: 1,
+                          }}
+                        />                        
+                        
+                        {/* Card body */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {/* Top row */}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              justifyContent: "space-between",
+                              gap: 10,
+                              marginBottom: 10,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 7,
+                                  flexWrap: "wrap",
+                                  marginBottom: 2,
+                                }}
+                              >
+                                <h2
+                                  style={{
+                                    fontSize: 14,
+                                    fontWeight: 700,
+                                    color: "#111827",
+                                    margin: 0,
+                                    lineHeight: 1.3,
+                                  }}
+                                >
+                                  {job.title}
+                                </h2>
+                                {isFeatured && (
+                                  <span
+                                    style={{
+                                      fontSize: 10,
+                                      fontWeight: 700,
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.06em",
+                                      color: "#92400E",
+                                      background: "#FEF3C7",
+                                      border: "1px solid #FDE68A",
+                                      padding: "2px 7px",
+                                      borderRadius: 4,
+                                    }}
+                                  >
+                                    Featured
+                                  </span>
+                                )}
+                                {isNew && !isFeatured && (
+                                  <span
+                                    style={{
+                                      fontSize: 10,
+                                      fontWeight: 700,
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.06em",
+                                      color: "#166534",
+                                      background: "#DCFCE7",
+                                      border: "1px solid #BBF7D0",
+                                      padding: "2px 7px",
+                                      borderRadius: 4,
+                                    }}
+                                  >
+                                    New today
+                                  </span>
+                                )}
+                              </div>
+                              <p
+                                style={{
+                                  fontSize: 12,
+                                  color: "#6B7280",
+                                  margin: 0,
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {name ?? "Company not listed"}
+                              </p>
+                            </div>
 
-                  {/* Content */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors text-sm leading-snug">
-                          {job.title}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5 font-medium">
-                          {name ?? "Company not listed"}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap shrink-0">
-                        {job.location && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-[11px] font-medium text-gray-600 rounded-md whitespace-nowrap">
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            {job.location}
-                          </span>
-                        )}
-                        {job.jobType && (
-                          <span className={`px-2.5 py-1 text-[11px] font-semibold rounded-md border whitespace-nowrap ${jobTypeBadge(job.jobType)}`}>
-                            {job.jobType}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {job.description && (
-                      <p className="mt-2 text-xs text-gray-400 line-clamp-2 leading-relaxed">
-                        {job.description}
-                      </p>
-                    )}
-                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-blue-600 group-hover:gap-2 transition-all">
-                      View & Apply
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                      </svg>
+                            {/* Location + type badges */}
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 5,
+                                flexWrap: "wrap",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {job.location && (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 4,
+                                    padding: "4px 9px",
+                                    borderRadius: 6,
+                                    fontSize: 11,
+                                    fontWeight: 500,
+                                    color: "#6B7280",
+                                    background: "#F9FAFB",
+                                    border: "1px solid #E5E7EB",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  <svg
+                                    width="10"
+                                    height="10"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="#9CA3AF"
+                                    strokeWidth={2}
+                                    aria-hidden="true"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                  </svg>
+                                  {job.location}
+                                </span>
+                              )}
+                              {job.jobType && pill && (
+                                <span
+                                  style={{
+                                    padding: "4px 9px",
+                                    borderRadius: 6,
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    whiteSpace: "nowrap",
+                                    background: pill.bg,
+                                    color: pill.color,
+                                    border: `1px solid ${pill.border}`,
+                                  }}
+                                >
+                                  {job.jobType}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Footer row */}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 8,
+                              paddingTop: 10,
+                              borderTop: "1px solid #F3F4F6",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 10,
+                              }}
+                            >
+                              {job.postedAt && (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 5,
+                                    fontSize: 11,
+                                    color: "#9CA3AF",
+                                  }}
+                                >
+                                  <svg
+                                    width="11"
+                                    height="11"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    aria-hidden="true"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                  {timeAgo(job.postedAt)}
+                                </span>
+                              )}
+                              {job.category && (
+                                <>
+                                  <span
+                                    style={{
+                                      color: "#E5E7EB",
+                                      fontSize: 12,
+                                    }}
+                                    aria-hidden="true"
+                                  >
+                                    ·
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: 11,
+                                      color: "#9CA3AF",
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    {job.category}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: "#2563EB",
+                              }}
+                            >
+                              Apply →
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Bookmark icon — toggle handled by BookmarkButton client component */}
+                        <BookmarkButton jobId={job._id} title={job.title} />
+                      </Link>
+                    </article>
+                  </Fragment>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div
+              style={{
+                marginTop: 36,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <nav
+                aria-label="Pagination"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                }}
+              >
+                {page > 1 ? (
+                  <Link
+                    href={pageHref(page - 1)}
+                    aria-label="Previous page"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "7px 13px",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#4B5563",
+                      background: "#FFFFFF",
+                      border: "1px solid #E5E7EB",
+                      textDecoration: "none",
+                    }}
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                    Prev
+                  </Link>
+                ) : (
+                  <span
+                    aria-disabled="true"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "7px 13px",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#D1D5DB",
+                      background: "#FAFAFA",
+                      border: "1px solid #F3F4F6",
+                    }}
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                    Prev
+                  </span>
+                )}
+
+                {pageNums.map((p, i) =>
+                  p === "…" ? (
+                    <span
+                      key={`ellipsis-${i}`}
+                      aria-hidden="true"
+                      style={{
+                        width: 34,
+                        height: 34,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 12,
+                        color: "#9CA3AF",
+                        userSelect: "none",
+                      }}
+                    >
+                      …
                     </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+                  ) : (
+                    <Link
+                      key={p}
+                      href={pageHref(p as number)}
+                      aria-label={`Page ${p}`}
+                      aria-current={p === page ? "page" : undefined}
+                      style={{
+                        width: 34,
+                        height: 34,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: 8,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        textDecoration: "none",
+                        background:
+                          p === page ? "#2563EB" : "#FFFFFF",
+                        color: p === page ? "#FFFFFF" : "#4B5563",
+                        border:
+                          p === page
+                            ? "1px solid #2563EB"
+                            : "1px solid #E5E7EB",
+                      }}
+                    >
+                      {p}
+                    </Link>
+                  )
+                )}
 
-        {/* ── PAGINATION ──────────────────────────────────────────────── */}
-        {totalPages > 1 && (
-          <div className="mt-10 flex items-center justify-center gap-1.5 flex-wrap">
-            {page > 1 ? (
-              <Link href={pageHref(page - 1)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-all">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-                Prev
-              </Link>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-100 bg-gray-50 text-xs font-semibold text-gray-300 cursor-not-allowed">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-                Prev
-              </span>
-            )}
+                {page < totalPages ? (
+                  <Link
+                    href={pageHref(page + 1)}
+                    aria-label="Next page"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "7px 13px",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#4B5563",
+                      background: "#FFFFFF",
+                      border: "1px solid #E5E7EB",
+                      textDecoration: "none",
+                    }}
+                  >
+                    Next
+                    <svg
+                      width="12"
+                      height="12"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </Link>
+                ) : (
+                  <span
+                    aria-disabled="true"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "7px 13px",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#D1D5DB",
+                      background: "#FAFAFA",
+                      border: "1px solid #F3F4F6",
+                    }}
+                  >
+                    Next
+                    <svg
+                      width="12"
+                      height="12"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </span>
+                )}
+              </nav>
 
-            {pageNums.map((p, i) =>
-              p === "…" ? (
-                <span key={`ellipsis-${i}`} className="px-2 text-gray-400 text-xs font-semibold select-none">…</span>
-              ) : (
-                <Link
-                  key={p}
-                  href={pageHref(p)}
-                  className={`w-9 h-9 flex items-center justify-center rounded-lg text-xs font-bold border transition-all ${
-                    p === page
-                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600"
-                  }`}
-                >
-                  {p}
-                </Link>
-              )
-            )}
-
-            {page < totalPages ? (
-              <Link href={pageHref(page + 1)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-all">
-                Next
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-100 bg-gray-50 text-xs font-semibold text-gray-300 cursor-not-allowed">
-                Next
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </span>
-            )}
-          </div>
-        )}
-
-        {totalPages > 1 && (
-          <p className="mt-4 text-center text-xs text-gray-400">
-            Page <span className="font-semibold text-gray-600">{page}</span> of{" "}
-            <span className="font-semibold text-gray-600">{totalPages}</span>
-          </p>
-        )}
-
+              <p
+                style={{ fontSize: 12, color: "#9CA3AF", margin: 0 }}
+                aria-live="polite"
+              >
+                Page{" "}
+                <span style={{ fontWeight: 600, color: "#4B5563" }}>
+                  {page}
+                </span>{" "}
+                of{" "}
+                <span style={{ fontWeight: 600, color: "#4B5563" }}>
+                  {totalPages}
+                </span>
+              </p>
+            </div>
+          )}
+        </main>
       </div>
-
-      <NewsletterSection />
     </div>
   );
 }

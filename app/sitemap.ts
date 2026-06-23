@@ -62,7 +62,7 @@ const blogUrls = (blogs as any[]).filter((post) => typeof post.slug === "string"
     ...new Set(
       jobs
         .map((job: any) => job.category)
-        .filter(Boolean)
+        .filter((cat: any) => typeof cat === "string")
         .map((cat: string) => slugify(cat))
     ),
   ] as string[];
@@ -79,7 +79,7 @@ const blogUrls = (blogs as any[]).filter((post) => typeof post.slug === "string"
     ...new Set(
       jobs
         .map((job: any) => job.company)
-        .filter(Boolean)
+        .filter((co: any) => typeof co === "string")
         .map((co: string) => slugify(co))
     ),
   ] as string[];
@@ -96,7 +96,7 @@ const blogUrls = (blogs as any[]).filter((post) => typeof post.slug === "string"
     ...new Set(
       jobs
         .map((job: any) => job.location)
-        .filter(Boolean)
+        .filter((loc: any) => typeof loc === "string")
         .map((loc: string) => slugify(loc))
     ),
   ] as string[];

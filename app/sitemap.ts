@@ -51,7 +51,7 @@ const jobUrls = jobs.filter((job: any) => typeof job.slug === "string").map((job
   // ✅ Blog post pages
   // ✅ new
 const blogUrls = (blogs as any[]).filter((post) => typeof post.slug === "string").map((post) => ({
-  url: `${baseUrl}/blog/${post.slug}`,git add .
+  url: `${baseUrl}/blog/${post.slug}`,
     lastModified: post.updatedAt || new Date(),
     changeFrequency: "weekly" as const,
     priority: 0.8,

@@ -2,6 +2,7 @@ import connectMongo from "@/lib/mongodb";
 import Job from "@/models/Job";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import CompanyAvatar from "@/components/CompanyAvatar";
 
 interface IJob {
   _id: string;
@@ -12,9 +13,10 @@ interface IJob {
   description?: string;
   content?: string;
   applyUrl?: string;
+  salary?: string;
   postedAt?: string | Date;
   updatedAt?: string | Date;
-  company?: { name?: string };
+  company?: { name?: string; logo?: string };
 }
 
 function cleanText(str?: string): string {
@@ -106,6 +108,7 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
   const cleanedDescription = cleanText(job.description);
   const cleanedLocation = cleanLocation(job.location);
   const companyName = job.company?.name;
+  const companyLogo = job.company?.logo;
   const avatar = initials(companyName);
   const color = avatarColor(job._id);
 
@@ -150,10 +153,13 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
           </nav>
 
           <div className="flex items-start gap-5">
-            {/* Company Avatar */}
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 ${color} shadow-sm`}>
-              <span className="text-lg font-black text-white select-none">{avatar}</span>
-            </div>
+            {/* Company Avatar / Logo */}
+            <CompanyAvatar
+              logoUrl={companyLogo}
+              initials={avatar}
+              colorClass={color}
+              size={64}
+            />
 
             <div className="flex-1 min-w-0">
               {/* Job Type Badge */}
@@ -222,7 +228,7 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
             {job.content ? (
               <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-sm">
                 <div
-                  className="prose prose-gray max-w-none
+                  className="prose prose-gray max-w-none overflow-hidden break-words    
                     prose-headings:font-bold prose-headings:text-gray-900 prose-headings:tracking-tight
                     prose-h3:text-lg prose-h3:mt-8 prose-h3:mb-3 prose-h3:pb-2 prose-h3:border-b prose-h3:border-gray-100
                     prose-p:text-gray-600 prose-p:leading-relaxed prose-p:my-3
@@ -286,6 +292,12 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-400 font-medium">Posted</span>
                     <span className="text-xs font-semibold text-gray-700">{postedDate}</span>
+                  </div>
+                )}
+                {job.salary && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400 font-medium">Salary</span>
+                    <span className="text-xs font-semibold text-emerald-600">{job.salary}</span>
                   </div>
                 )}
               </div>

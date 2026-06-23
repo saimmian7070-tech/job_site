@@ -115,6 +115,53 @@ interface HomePageClientProps {
   jobs: IJob[];
   blogs: IBlog[];
 }
+function TypewriterHeadline() {
+  const word = "chapter.";
+  const [displayed, setDisplayed] = useState("");
+  const [underline, setUnderline] = useState(false);
+
+  useEffect(() => {
+    if (displayed.length < word.length) {
+      const t = setTimeout(() => setDisplayed(word.slice(0, displayed.length + 1)), 120);
+      return () => clearTimeout(t);
+    } else {
+      const t = setTimeout(() => setUnderline(true), 500);
+      return () => clearTimeout(t);
+    }
+  }, [displayed]);
+
+  return (
+    <h1 className="text-[2.6rem] sm:text-5xl md:text-[3.5rem] font-extrabold leading-[1.1] tracking-[-0.02em] text-white">
+      Find the job that fits your next<br />
+      <span className="relative inline-block text-blue-400">
+        {displayed}
+        {!underline && displayed.length === word.length && (
+          <span className="inline-block w-[3px] h-[0.85em] bg-blue-400 ml-1 align-middle animate-pulse" />
+        )}
+        {underline && (
+          <span
+            style={{
+              position: "absolute",
+              bottom: -4,
+              left: 0,
+              height: 3,
+              borderRadius: 9999,
+              background: "#60a5fa",
+              width: "100%",
+              animation: "drawLine 1.4s cubic-bezier(0.4,0,0.2,1) forwards",
+            }}
+          />
+        )}
+      </span>
+      <style>{`
+        @keyframes drawLine {
+          from { width: 0%; opacity: 0; }
+          to   { width: 100%; opacity: 1; }
+        }
+      `}</style>
+    </h1>
+  );
+}
 
 export default function HomePageClient({ jobs = [], blogs = [] }: HomePageClientProps) {
   const [statsStarted, setStatsStarted] = useState(false);
@@ -164,92 +211,7 @@ export default function HomePageClient({ jobs = [], blogs = [] }: HomePageClient
               <span className="text-[11px] font-semibold text-blue-300 uppercase tracking-[0.12em]">Listings updated daily</span>
             </div>
 
-            {(() => {
-  const words = ["journey","career","story","path","phase","chapter","future","move"];
-  const colors = ["#f472b6","#34d399","#fb923c","#a78bfa","#38bdf8","#60a5fa","#f472b6","#34d399"];
-  const finalWord = "chapter";
-  const finalColor = "#60a5fa";
-
-  const [display, setDisplay]     = useState({ text: words[0], color: colors[0] });
-  const [transform, setTransform] = useState("translateY(0)");
-  const [opacity, setOpacity]     = useState(1);
-  const [transition, setTransition] = useState("none");
-  const [scanning, setScanning]   = useState(false);
-
-  useEffect(() => {
-    const phases = [
-      { count: 6, interval: 60  },
-      { count: 5, interval: 100 },
-      { count: 4, interval: 160 },
-      { count: 3, interval: 240 },
-      { count: 2, interval: 340 },
-    ];
-
-    let wordIdx = 0;
-    let phaseIdx = 0;
-    let countInPhase = 0;
-    let timer: ReturnType<typeof setTimeout>;
-
-    const snap = (txt: string, color: string) => {
-      setTransition("none");
-      setOpacity(0.2);
-      setTransform("translateY(-40%)");
-      setTimeout(() => {
-        setDisplay({ text: txt, color });
-        setTransform("translateY(30%)");
-        setOpacity(1);
-        setTransition("transform 0.08s ease-out");
-        requestAnimationFrame(() => requestAnimationFrame(() => setTransform("translateY(0)")));
-      }, 40);
-    };
-
-    const tick = () => {
-      const phase = phases[phaseIdx];
-      wordIdx = (wordIdx + 1) % words.length;
-      snap(words[wordIdx], colors[wordIdx]);
-      countInPhase++;
-      if (countInPhase >= phase.count) { phaseIdx++; countInPhase = 0; }
-      if (phaseIdx < phases.length) {
-        timer = setTimeout(tick, phases[phaseIdx]?.interval ?? phase.interval);
-      } else {
-        timer = setTimeout(land, 300);
-      }
-    };
-
-    const land = () => {
-      setScanning(false);
-      setTransition("none");
-      setOpacity(0);
-      setTransform("translateY(-60%)");
-      setTimeout(() => {
-        setDisplay({ text: finalWord, color: finalColor });
-        setTransition("transform 0.22s cubic-bezier(0.34,1.56,0.64,1)");
-        setTransform("translateY(0)");
-        setOpacity(1);
-      }, 60);
-    };
-
-    timer = setTimeout(() => { setScanning(true); tick(); }, 800);
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <h1 className="text-[2.6rem] sm:text-5xl md:text-[3.5rem] font-extrabold leading-[1.1] tracking-[-0.02em] text-white">
-      Find the job that fits<br />
-      <span>
-        your next{" "}
-        <span style={{ display:"inline-block", overflow:"hidden", verticalAlign:"bottom", height:"1.15em", position:"relative", minWidth:`${Math.max(display.text.length * 0.58, 4)}ch` }}>
-          {scanning && (
-            <span style={{ position:"absolute", left:0, right:0, top:"50%", height:2, background:"rgba(96,165,250,0.4)", transform:"translateY(-50%)", borderRadius:2 }} />
-          )}
-          <span style={{ display:"block", color:display.color, transform, opacity, transition, willChange:"transform" }}>
-            {display.text}
-          </span>
-        </span>
-      </span>
-    </h1>
-  );
-})()}
+            <TypewriterHeadline />
 
             <p className="mt-5 text-[1.05rem] text-slate-400 max-w-lg leading-[1.75]">
               Curated listings, expert career guides, and hiring insights —

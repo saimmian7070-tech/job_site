@@ -69,6 +69,7 @@ export default function NavLinks() {
             {link.label}
           </Link>
         ))}
+        
 
         {/* More dropdown — click-based, works on touch */}
         <div className="relative" ref={dropdownRef}>
@@ -92,7 +93,7 @@ export default function NavLinks() {
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-44 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50 py-1">
+            <div className="absolute right-0 top-full mt-1.5 w-44 bg-white border border-gray-200 rounded-xl shadow-lg overflow-visible z-50 py-1">
               {MORE_LINKS.map((link) => (
                 <Link
                   key={link.href}
@@ -110,6 +111,12 @@ export default function NavLinks() {
           )}
         </div>
       </div>
+      <Link
+  href={pathname.startsWith("/blog") ? "/jobs" : "/blog"}
+  className="hidden sm:inline-flex ml-1 items-center gap-1.5 rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-600 transition-colors whitespace-nowrap shadow-sm sm:px-4 sm:text-sm sm:ml-2"
+>
+  {pathname.startsWith("/blog") ? "Browse Jobs" : "Career Tips"}
+</Link>
 
       {/* ── MOBILE HAMBURGER ────────────────────────────────────────────── */}
       <button

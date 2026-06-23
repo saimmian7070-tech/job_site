@@ -2,6 +2,7 @@ import "./globals.css";
 import Link from "next/link";
 import NavLinks from "./components/NavLinks";
 import type { Metadata } from "next";
+import CookieConsent from "@/components/CookieConsent";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://jobshomeonline.com"),
@@ -11,7 +12,6 @@ export const metadata: Metadata = {
   },
   description:
     "Discover remote jobs, career opportunities, and expert hiring insights from companies around the world.",
-  keywords: "jobs, remote jobs, IT jobs, careers, hiring, career advice",
   authors: [{ name: "Jobs Home Online" }],
   creator: "Jobs Home Online",
   openGraph: {
@@ -73,29 +73,23 @@ export default function RootLayout({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 min-w-0 overflow-hidden">
 
             {/* Logo */}
-            <Link href="/" aria-label="Jobs Home Online – Home" className="flex items-center gap-2.5 shrink-0">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700 shadow-sm shrink-0">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2" y="5" width="14" height="10" rx="2" stroke="white" strokeWidth="1.6"/>
-                <path d="M6 5V4a3 3 0 016 0v1" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
-                <path d="M2 9h14" stroke="white" strokeWidth="1.4" strokeOpacity="0.5"/>
-              </svg>
-            </span>
-            <span className="text-[15px] font-bold tracking-tight text-slate-900 leading-none">
-            Jobs<span className="text-blue-700">Home</span> Online
-          </span>
-              
-            </Link>
+            <Link href="/" aria-label="Jobs Home Online – Home" className="flex items-center gap-3 shrink-0">
+  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700 shrink-0">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="5" width="14" height="10" rx="2" stroke="white" strokeWidth="1.6"/>
+      <path d="M6 5V4a3 3 0 016 0v1" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
+      <path d="M2 9h14" stroke="white" strokeWidth="1.4" strokeOpacity="0.5"/>
+    </svg>
+  </span>
+  <span className="text-[20px] font-black tracking-tight leading-none text-slate-900">
+    Jobs<span className="text-blue-700">Home</span>
+    <span className="text-slate-400 font-semibold text-[16px]"> Online</span>
+  </span>
+</Link>
 
             {/* Nav links + CTA */}
             <div className="flex items-center gap-1 sm:gap-2">
               <NavLinks />
-              <Link
-                href="/blog"
-                className="hidden sm:inline-flex ml-1 inline-flex items-center gap-1.5 rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-600 active:bg-blue-800 transition-colors whitespace-nowrap shadow-sm sm:px-4 sm:text-sm sm:ml-2"
-              >
-                Career Tips
-              </Link>
             </div>
 
           </div>
@@ -117,18 +111,19 @@ export default function RootLayout({
 
               {/* Brand */}
               <div className="col-span-2 md:col-span-1">
-                <Link href="/" className="inline-flex items-center gap-2.5 mb-4">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 shrink-0">
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="5" width="14" height="10" rx="2" stroke="white" strokeWidth="1.6"/>
-                    <path d="M6 5V4a3 3 0 016 0v1" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
-                    <path d="M2 9h14" stroke="white" strokeWidth="1.4" strokeOpacity="0.5"/>
-                  </svg>
-                </span>
-                <span className="text-[15px] font-bold text-white tracking-tight leading-none">
-                  Jobs<span className="text-blue-400">Home</span> Online
-                </span>
-                </Link>
+                <Link href="/" className="inline-flex items-center gap-3 mb-4">
+  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700 shrink-0">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="5" width="14" height="10" rx="2" stroke="white" strokeWidth="1.6"/>
+      <path d="M6 5V4a3 3 0 016 0v1" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
+      <path d="M2 9h14" stroke="white" strokeWidth="1.4" strokeOpacity="0.5"/>
+    </svg>
+  </span>
+  <span className="text-[20px] font-black tracking-tight leading-none text-white">
+    Jobs<span className="text-blue-400">Home</span>
+    <span className="text-slate-500 font-semibold text-[16px]"> Online</span>
+  </span>
+</Link>
                 <p className="text-sm text-slate-500 leading-relaxed max-w-[220px]">
                   Curated job listings and career guides for professionals at every level.
                 </p>
@@ -232,6 +227,7 @@ export default function RootLayout({
 
           </div>
         </footer>
+        <CookieConsent />
 
       </body>
     </html>

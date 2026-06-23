@@ -11,6 +11,7 @@ interface IJob {
   location?: string;
   jobType?: string;
   description?: string;
+  salary?: string;
   postedAt?: string | Date;
   category?: string;
   company?: { name?: string };
@@ -94,107 +95,112 @@ function timeAgo(date: string | Date) {
 
 export default async function JobsPage({ searchParams }: any) {
   const params = await searchParams;
-  const page = Math.max(1, Number(params.page || 1));
-  const keyword = (params.q ?? "").trim();
-  const location = (params.loc ?? "").trim();
-  const jobType = (params.type ?? "").toLowerCase().trim();
-  const limit = 20;
+const page = Math.max(1, Number(params.page || 1));
+const keyword = (params.q ?? "").trim();
+const location = (params.loc ?? "").trim();
+const jobType = (params.type ?? "").toLowerCase().trim();
+const category = (params.cat ?? "").trim();
+const limit = 20;
 
-  let jobs: IJob[] = [];
-  let totalJobs = 0;
-  let remoteCount = 0;
-  let engineeringCount = 0;
-  let todayCount = 0;
-  let typeCountMap: Record<string, number> = {};
-  let categoryCountMap: Record<string, number> = {};
+let jobs: IJob[] = [];
+let totalJobs = 0;
+let remoteCount = 0;
+let engineeringCount = 0;
+let todayCount = 0;
+let typeCountMap: Record<string, number> = {};
+let categoryCountMap: Record<string, number> = {};
 
-  try {
-    await connectMongo();
-    const typeCounts = await Job.aggregate([
-      { $group: { _id: { $toLower: "$jobType" }, count: { $sum: 1 } } }
-    ]);
-    typeCounts.forEach((t: any) => { typeCountMap[t._id] = t.count; });
+try {
+  await connectMongo();
 
-    const categoryCounts = await Job.aggregate([
-      { $group: { _id: "$category", count: { $sum: 1 } } }
-    ]);
-    categoryCounts.forEach((c: any) => { categoryCountMap[c._id] = c.count; });
+  const typeCounts = await Job.aggregate([
+    { $group: { _id: { $toLower: "$jobType" }, count: { $sum: 1 } } }
+  ]);
+  typeCounts.forEach((t: any) => { typeCountMap[t._id] = t.count; });
 
-    const remoteCount = await Job.countDocuments({ jobType: { $regex: "remote", $options: "i" } });
-    const engineeringCount = await Job.countDocuments({ category: "Engineering" });
-    const todayCount = await Job.countDocuments({ postedAt: { $gte: new Date(new Date().setHours(0,0,0,0)) } });
+  const categoryCounts = await Job.aggregate([
+  { $match: { category: { $exists: true, $ne: null } } },
+  { $group: { _id: "$category", count: { $sum: 1 } } }
+  ]);
+  categoryCounts.forEach((c: any) => {
+    if (c._id != null) categoryCountMap[String(c._id)] = c.count;
+  });
 
-    const query: any = {};
-    const andClauses: any[] = [];
+  remoteCount = await Job.countDocuments({ jobType: { $regex: "remote", $options: "i" } });
+  engineeringCount = await Job.countDocuments({ category: { $regex: "engineer", $options: "i" } });
+  todayCount = await Job.countDocuments({ postedAt: { $gte: new Date(new Date().setHours(0,0,0,0)) } });
 
-    if (keyword) {
-      andClauses.push({
-        $or: [
-          { title: { $regex: keyword, $options: "i" } },
-          { description: { $regex: keyword, $options: "i" } },
-          { "company.name": { $regex: keyword, $options: "i" } },
-        ],
-      });
-    }
+  const andClauses: any[] = [];
+
+  if (keyword) {
     andClauses.push({
-    title: { $regex: "^[\\x00-\\x7F\\xC0-\\xFF\\s]+$", $options: "i" }
+      $or: [
+        { title: { $regex: keyword, $options: "i" } },
+        { description: { $regex: keyword, $options: "i" } },
+        { "company.name": { $regex: keyword, $options: "i" } },
+      ],
     });
-    if (location) {
-      andClauses.push({
-        $or: [
-          { location: { $regex: location, $options: "i" } },
-          { jobType: { $regex: location, $options: "i" } },
-        ],
-      });
-    }
-    if (jobType) {
-      andClauses.push({ jobType: { $regex: jobType, $options: "i" } });
-    }
-    if (andClauses.length > 0) query.$and = andClauses;
-
-    totalJobs = await Job.countDocuments(query);
-    const raw = await Job.find(query)
-      .sort({ score: 1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean();
-    jobs = raw.map((j: any) => ({ ...j, _id: j._id.toString() }));
-  } catch (err) {
-    console.error("JobsPage DB error:", err);
   }
+
+  if (location) {
+    andClauses.push({
+      $or: [
+        { location: { $regex: location, $options: "i" } },
+        { jobType: { $regex: location, $options: "i" } },
+      ],
+    });
+  }
+
+  if (jobType) {
+    andClauses.push({ jobType: { $regex: jobType, $options: "i" } });
+  }
+
+  if (category) {
+    andClauses.push({ category: { $regex: category, $options: "i" } });
+  }
+
+  const query: any = andClauses.length > 0 ? { $and: andClauses } : {};
+
+  totalJobs = await Job.countDocuments(query);
+  const raw = await Job.find(query)
+    .sort({ score: -1, postedAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean();
+  jobs = raw.map((j: any) => ({ ...j, _id: j._id.toString() }));
+} catch (err) {
+  console.error("JobsPage DB error:", err);
+}
 
   const totalPages = Math.max(1, Math.ceil(totalJobs / limit));
   const from = totalJobs === 0 ? 0 : (page - 1) * limit + 1;
   const to = from + jobs.length - 1;
 
   const activeFilters: { label: string; removeKey: string }[] = [];
-  if (keyword) activeFilters.push({ label: `"${keyword}"`, removeKey: "q" });
-  if (location)
-    activeFilters.push({ label: location, removeKey: "loc" });
-  if (jobType)
-    activeFilters.push({
-      label: jobType.charAt(0).toUpperCase() + jobType.slice(1),
-      removeKey: "type",
-    });
-
+if (keyword) activeFilters.push({ label: `"${keyword}"`, removeKey: "q" });
+if (location) activeFilters.push({ label: location, removeKey: "loc" });
+if (jobType) activeFilters.push({ label: jobType.charAt(0).toUpperCase() + jobType.slice(1), removeKey: "type" });
+if (category) activeFilters.push({ label: category, removeKey: "cat" });
   function removeFilterHref(key: string) {
-    const p = new URLSearchParams();
-    if (key !== "q" && keyword) p.set("q", keyword);
-    if (key !== "loc" && location) p.set("loc", location);
-    if (key !== "type" && jobType) p.set("type", jobType);
-    const qs = p.toString();
-    return `/jobs${qs ? `?${qs}` : ""}`;
-  }
+  const p = new URLSearchParams();
+  if (key !== "q" && keyword) p.set("q", keyword);
+  if (key !== "loc" && location) p.set("loc", location);
+  if (key !== "type" && jobType) p.set("type", jobType);
+  if (key !== "cat" && category) p.set("cat", category);
+  const qs = p.toString();
+  return `/jobs${qs ? `?${qs}` : ""}`;
+}
 
-  function pageHref(p: number) {
-    const pr = new URLSearchParams();
-    if (keyword) pr.set("q", keyword);
-    if (location) pr.set("loc", location);
-    if (jobType) pr.set("type", jobType);
-    if (p > 1) pr.set("page", String(p));
-    const qs = pr.toString();
-    return `/jobs${qs ? `?${qs}` : ""}`;
-  }
+function pageHref(p: number) {
+  const pr = new URLSearchParams();
+  if (keyword) pr.set("q", keyword);
+  if (location) pr.set("loc", location);
+  if (jobType) pr.set("type", jobType);
+  if (category) pr.set("cat", category);
+  if (p > 1) pr.set("page", String(p));
+  const qs = pr.toString();
+  return `/jobs${qs ? `?${qs}` : ""}`;
+}
 
   function typeHref(t: string) {
     const p = new URLSearchParams();
@@ -829,59 +835,40 @@ export default async function JobsPage({ searchParams }: any) {
               </summary>
               <div style={{ padding: "10px 16px 14px" }}>
                 {[
-                  { label: "Engineering", count: categoryCountMap["Engineering"] ?? 0 },
-                  { label: "Sales",       count: categoryCountMap["Sales"]       ?? 0 },
-                  { label: "Design",      count: categoryCountMap["Design"]      ?? 0 },
-                  { label: "Marketing",   count: categoryCountMap["Marketing"]   ?? 0 },
-                  { label: "Finance",     count: categoryCountMap["Finance"]     ?? 0 },
-                  { label: "Customer",    count: categoryCountMap["Customer"]    ?? 0 },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "5px 0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 9,
-                      }}
-                    >
-                      <div
-                        aria-hidden="true"
-                        style={{
-                          width: 15,
-                          height: 15,
-                          borderRadius: 4,
-                          border: "1.5px solid #D1D5DB",
-                          background: "#FFFFFF",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span style={{ fontSize: 13, color: "#4B5563" }}>
-                        {item.label}
-                      </span>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: "#9CA3AF",
-                        background: "#F9FAFB",
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                      }}
-                    >
-                      {item.count}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </details>
+                  { label: "Engineering", count: Object.entries(categoryCountMap).filter(([k]) => k != null && /engineer/i.test(k)).reduce((s,[,v]) => s+v, 0) },
+                  { label: "Sales",       count: Object.entries(categoryCountMap).filter(([k]) => k != null && /sales/i.test(k)).reduce((s,[,v]) => s+v, 0) },
+                  { label: "Design",      count: Object.entries(categoryCountMap).filter(([k]) => k != null && /design/i.test(k)).reduce((s,[,v]) => s+v, 0) },
+                  { label: "Marketing",   count: Object.entries(categoryCountMap).filter(([k]) => k != null && /market/i.test(k)).reduce((s,[,v]) => s+v, 0) },
+                  { label: "Finance",     count: Object.entries(categoryCountMap).filter(([k]) => k != null && /financ|account/i.test(k)).reduce((s,[,v]) => s+v, 0) },
+                  { label: "Customer",    count: Object.entries(categoryCountMap).filter(([k]) => k != null && /customer|support/i.test(k)).reduce((s,[,v]) => s+v, 0) },
+                    ].map((item) => {
+                  const isChecked = item.label.toLowerCase() === category.toLowerCase();
+                  const href = (() => {
+                    const p = new URLSearchParams();
+                    if (keyword) p.set("q", keyword);
+                    if (location) p.set("loc", location);
+                    if (jobType) p.set("type", jobType);
+                    if (!isChecked) p.set("cat", item.label);
+                    return `/jobs${p.toString() ? `?${p.toString()}` : ""}`;
+                  })();
+                  return (
+                    <Link key={item.label} href={href} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 0", textDecoration: "none", cursor: "pointer" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                        <div aria-hidden="true" style={{ width: 15, height: 15, borderRadius: 4, border: isChecked ? "1.5px solid #2563EB" : "1.5px solid #D1D5DB", background: isChecked ? "#2563EB" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {isChecked && (
+                            <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="#FFFFFF" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <span style={{ fontSize: 13, color: isChecked ? "#1D4ED8" : "#4B5563", fontWeight: isChecked ? 600 : 400 }}>{item.label}</span>
+                      </div>
+                      <span style={{ fontSize: 11, color: "#9CA3AF", background: "#F9FAFB", padding: "2px 6px", borderRadius: 4 }}>{item.count}</span>
+                    </Link>
+                  );
+                })}
+                </div>
+                </details>
 
             {/* Experience */}
             <details open style={{ borderTop: "1px solid #F3F4F6" }}>
@@ -976,6 +963,35 @@ export default async function JobsPage({ searchParams }: any) {
 
         {/* ── MAIN FEED ──────────────────────────────────────────────── */}
         <main aria-label="Job listings" style={{ flex: 1, minWidth: 0 }}>
+          {process.env.NODE_ENV === "development" && (
+          <div style={{
+            marginBottom: 16,
+            padding: "12px 16px",
+            background: "#0F172A",
+            borderRadius: 10,
+            border: "1px solid #334155",
+            fontFamily: "monospace",
+          }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              🛠 Dev — categoryCountMap keys
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {Object.entries(categoryCountMap).map(([k, v]) => (
+                <span key={k} style={{
+                  fontSize: 11,
+                  fontFamily: "monospace",
+                  background: "#1E293B",
+                  color: "#7DD3FC",
+                  border: "1px solid #334155",
+                  borderRadius: 5,
+                  padding: "3px 8px",
+                }}>
+                  {k} <span style={{ color: "#64748B" }}>·</span> <span style={{ color: "#86EFAC" }}>{v}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
           {/* Result count + sort + active filters */}
           <div
             style={{
@@ -1386,6 +1402,23 @@ export default async function JobsPage({ searchParams }: any) {
                                   {job.jobType}
                                 </span>
                               )}
+                              {job.salary && (
+                              <span style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                padding: "4px 9px",
+                                borderRadius: 6,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                whiteSpace: "nowrap",
+                                background: "#F0FDF4",
+                                color: "#166534",
+                                border: "1px solid #BBF7D0",
+                              }}>
+                                💰 {job.salary}
+                              </span>
+                            )}
                             </div>
                           </div>
 

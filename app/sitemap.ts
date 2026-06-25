@@ -12,8 +12,7 @@ function slugify(value: string): string {
 
 export default async function sitemap() {
   await connectMongo();
-const jobs = await Job.find({}).select("slug updatedAt postedAt").limit(5000).lean();
-  await connectMongo();
+  const jobs = await Job.find({}).select("slug updatedAt postedAt").limit(5000).lean();
   const blogs = await Blog.find({}).lean();
 
   const baseUrl = "https://jobshomeonline.com";

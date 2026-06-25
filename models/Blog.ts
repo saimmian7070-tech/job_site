@@ -6,9 +6,13 @@ const BlogSchema = new Schema(
     slug: { type: String, required: true, unique: true },
     description: String,
     content: String,
+    coverImage: String,
+    category: String,
   },
   { timestamps: true }
 );
+
+BlogSchema.index({ createdAt: -1 });
 
 const Blog = models.Blog || model("Blog", BlogSchema);
 

@@ -70,7 +70,7 @@ export default function RootLayout({
 
         {/* ── NAVBAR ──────────────────────────────────────────────────────── */}
         <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-[99999] bg-white/95 backdrop-blur-sm border-b border-slate-100 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 min-w-0 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 min-w-0 overflow-visible">
 
             {/* Logo */}
             <Link href="/" aria-label="Jobs Home Online – Home" className="flex items-center gap-3 shrink-0">

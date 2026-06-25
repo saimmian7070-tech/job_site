@@ -1,4 +1,18 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy | Jobs Home Online",
+  description: "Read the Jobs Home Online privacy policy to understand how we collect, use, and protect your data.",
+  alternates: {
+    canonical: "https://jobshomeonline.com/privacy",
+  },
+  robots: {
+    index: true,
+    follow: false,
+  },
+};
 export default function PrivacyPolicyPage() {
+  
   return (
     <div className="bg-slate-50 min-h-screen">
 
@@ -11,9 +25,6 @@ export default function PrivacyPolicyPage() {
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
             Privacy Policy
           </h1>
-          <p className="mt-3 text-sm text-slate-400">
-            Last updated: {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
-          </p>
         </div>
       </div>
 

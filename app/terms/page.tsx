@@ -1,3 +1,16 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of Service | Jobs Home Online",
+  description: "Read the Jobs Home Online terms of service to understand the rules and guidelines for using our platform.",
+  alternates: {
+    canonical: "https://jobshomeonline.com/terms",
+  },
+  robots: {
+    index: true,
+    follow: false,
+  },
+};
 export default function TermsPage() {
   return (
     <div className="bg-white min-h-screen">
@@ -9,9 +22,6 @@ export default function TermsPage() {
             Legal
           </p>
           <h1 className="text-3xl font-bold text-gray-900">Terms of Service</h1>
-          <p className="mt-3 text-sm text-gray-500">
-            Last updated: June 2025
-          </p>
         </div>
 
         {/* Body */}

@@ -1,6 +1,6 @@
-import { getJobs } from "@/lib/jobs";
 import connectMongo from "@/lib/mongodb";
 import Blog from "@/models/Blog";
+import Job from "@/models/Job";
 
 function slugify(value: string): string {
   return value
@@ -11,11 +11,8 @@ function slugify(value: string): string {
 }
 
 export default async function sitemap() {
-  const allJobs = await getJobs();
-
-  // ✅ Only include active jobs
-  const jobs = allJobs.filter((job: any) => job.isActive === true);
-
+  await connectMongo();
+const jobs = await Job.find({}).select("slug updatedAt postedAt").limit(5000).lean();
   await connectMongo();
   const blogs = await Blog.find({}).lean();
 
@@ -67,18 +64,18 @@ const blogUrls = (blogs as any[]).filter((post) => typeof post.slug === "string"
     ),
   ] as string[];
 
-  const categoryUrls = uniqueCategories.map((cat) => ({
-    url: `${baseUrl}/categories/${cat}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.5,
-  }));
+  const categoryUrls = ["tech", "design", "marketing", "finance", "support", "remote", "part-time", "entry-level"].map((cat) => ({
+  url: `${baseUrl}/categories/${cat}`,
+  lastModified: new Date(),
+  changeFrequency: "monthly" as const,
+  priority: 0.5,
+}));
 
   // ✅ Dynamic companies — unique slugified company names from active jobs
   const uniqueCompanies = [
     ...new Set(
       jobs
-        .map((job: any) => job.company)
+        .map((job: any) => job.company?.name)
         .filter((co: any) => typeof co === "string")
         .map((co: string) => slugify(co))
     ),
@@ -124,4 +121,4 @@ const blogUrls = (blogs as any[]).filter((post) => typeof post.slug === "string"
     seen.add(url);
     return true;
   });
-}
+} 

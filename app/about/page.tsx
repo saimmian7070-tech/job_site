@@ -1,4 +1,19 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "About Us | Jobs Home Online",
+  description: "Learn about Jobs Home Online — a global career platform helping professionals find jobs, grow their careers, and stay informed about the modern job market.",
+  alternates: {
+    canonical: "https://jobshomeonline.com/about",
+  },
+  openGraph: {
+    title: "About Us | Jobs Home Online",
+    description: "Learn about Jobs Home Online — a global career platform helping professionals find jobs and grow their careers.",
+    url: "https://jobshomeonline.com/about",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+};
 
 export default function AboutPage() {
   return (

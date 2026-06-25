@@ -8,6 +8,8 @@ const SettingsSchema = new Schema({
   pausedReason: { type: String, default: "" },
   pausedAt: { type: Date, default: null },
   lastCompanyIndex: { type: Number, default: 0 },
+  rawHash: { type: String, default: "" },
 });
 
+SettingsSchema.index({ key: 1 });
 export default mongoose.models.Settings || mongoose.model("Settings", SettingsSchema);

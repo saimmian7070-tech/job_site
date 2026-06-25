@@ -112,11 +112,11 @@ export default function NavLinks() {
         </div>
       </div>
       <Link
-  href={pathname.startsWith("/blog") ? "/jobs" : "/blog"}
-  className="hidden sm:inline-flex ml-1 items-center gap-1.5 rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-600 transition-colors whitespace-nowrap shadow-sm sm:px-4 sm:text-sm sm:ml-2"
->
-  {pathname.startsWith("/blog") ? "Browse Jobs" : "Career Tips"}
-</Link>
+        href="/jobs"
+        className="hidden sm:inline-flex ml-1 items-center gap-1.5 rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-600 transition-colors whitespace-nowrap shadow-sm sm:px-4 sm:text-sm sm:ml-2"
+      >
+        Browse Jobs
+      </Link>
 
       {/* ── MOBILE HAMBURGER ────────────────────────────────────────────── */}
       <button

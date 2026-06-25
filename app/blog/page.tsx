@@ -280,6 +280,15 @@ const CATEGORIES = [
 export const metadata = {
   title: "Career Blog | Jobs Home Online",
   description: "Career advice, resume tips, interview preparation, and hiring insights for working professionals.",
+  alternates: {
+    canonical: "https://jobshomeonline.com/blog",
+  },
+  openGraph: {
+    title: "Career Blog | Jobs Home Online",
+    description: "Career advice, resume tips, interview preparation, and hiring insights for working professionals.",
+    url: "https://jobshomeonline.com/blog",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
 };
 
 interface PageProps {
@@ -298,7 +307,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
 
   try {
     await connectMongo();
-    const raw = await Blog.find({}).sort({ createdAt: -1 }).lean();
+    const raw = await Blog.find({}).sort({ createdAt: -1 }).limit(30).lean();
     blogs = raw.map((b: any) => ({ ...b, _id: b._id.toString() }));
   } catch (err) {
     console.error("BlogPage DB error:", err);

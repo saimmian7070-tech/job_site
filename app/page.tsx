@@ -9,7 +9,7 @@ export default async function HomePage() {
 
   try {
     await connectMongo();
-    const rawJobs  = await Job.find({}).sort({ createdAt: -1 }).limit(6).lean();
+    const rawJobs = await Job.find({ isActive: true }).sort({ score: -1, createdAt: -1 }).limit(6).lean();
     const rawBlogs = await Blog.find({}).sort({ createdAt: -1 }).limit(9).lean();
     jobs  = rawJobs.map((j: any)  => ({ ...j, _id: j._id.toString() }));
     blogs = rawBlogs.map((b: any) => ({ ...b, _id: b._id.toString() }));

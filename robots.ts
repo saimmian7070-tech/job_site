@@ -5,6 +5,12 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: [
+        "/api/",
+        "/admin/",
+        "/_next/",
+        "/test/",
+      ],
     },
     sitemap: "https://jobshomeonline.com/sitemap.xml",
   };

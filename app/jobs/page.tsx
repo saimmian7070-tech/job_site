@@ -288,8 +288,10 @@ function pageHref(p: number) {
               </h1>
               <p style={{ fontSize: 13, color: "#6B7280", margin: 0 }}>
                 {totalJobs > 0
-                  ? `${totalJobs.toLocaleString()} open positions across tech, design, marketing, finance and more.`
+                  ? `${(Math.floor(totalJobs / 100) * 100).toLocaleString()}+ open positions across tech, design, marketing, finance and more.`
                   : "Remote and global opportunities across every industry — apply in one click."}
+                  
+
               </p>
             </div>
 
@@ -869,97 +871,8 @@ function pageHref(p: number) {
                 })}
                 </div>
                 </details>
-
-            {/* Experience */}
-            <details open style={{ borderTop: "1px solid #F3F4F6" }}>
-              <summary
-                style={{
-                  padding: "12px 16px",
-                  borderBottom: "1px solid #F3F4F6",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "#374151",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.07em",
-                  cursor: "pointer",
-                  listStyle: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  userSelect: "none",
-                }}
-              >
-                Experience
-                <svg
-                  width="12"
-                  height="12"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="#9CA3AF"
-                  strokeWidth={2.5}
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </summary>
-              <div style={{ padding: "10px 16px 14px" }}>
-                {[
-                  { label: "Entry Level", count: typeCountMap["entry level"] ?? 0 },
-                  { label: "Mid Level",   count: typeCountMap["mid level"]   ?? 0 },
-                  { label: "Senior",      count: typeCountMap["senior"]      ?? 0 },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "5px 0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 9,
-                      }}
-                    >
-                      <div
-                        aria-hidden="true"
-                        style={{
-                          width: 15,
-                          height: 15,
-                          borderRadius: 4,
-                          border: "1.5px solid #D1D5DB",
-                          background: "#FFFFFF",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span style={{ fontSize: 13, color: "#4B5563" }}>
-                        {item.label}
-                      </span>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: "#9CA3AF",
-                        background: "#F9FAFB",
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                      }}
-                    >
-                      {item.count}
-                    </span>
-                  </div>
-                ))}
               </div>
-            </details>
-          </div>
-        </aside>
+            </aside>
 
         {/* ── MAIN FEED ──────────────────────────────────────────────── */}
         <main aria-label="Job listings" style={{ flex: 1, minWidth: 0 }}>
@@ -1019,16 +932,17 @@ function pageHref(p: number) {
                     margin: 0,
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: 15,
-                      fontWeight: 700,
-                      color: "#2563EB",
-                    }}
-                  >
-                    {totalJobs.toLocaleString()}
+                  {/* <span style={{ fontSize: 15, fontWeight: 700, color: "#2563EB" }}>
+                    {(Math.floor(totalJobs / 100) * 100).toLocaleString()}+
                   </span>{" "}
-                  job{totalJobs !== 1 ? "s" : ""} found
+                  jobs found */}
+
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#2563EB" }}>
+  {totalJobs.toLocaleString()}
+</span>{" "}
+jobs found
+
+
                   {totalPages > 1 && (
                     <span style={{ color: "#9CA3AF", marginLeft: 6 }}>
                       · showing {from}–{to}
@@ -1415,6 +1329,9 @@ function pageHref(p: number) {
                                 background: "#F0FDF4",
                                 color: "#166534",
                                 border: "1px solid #BBF7D0",
+                                maxWidth: "140px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
                               }}>
                                 💰 {job.salary}
                               </span>

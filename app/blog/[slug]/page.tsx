@@ -49,18 +49,22 @@ export async function generateMetadata({
     const description = post.description?.slice(0, 160) ?? "";
 
     return {
-      title: `${post.title} | Career Blog`,
-      description,
-      openGraph: {
-        title: post.title,
-        description,
-        type: "article",
-        url: `https://jobshomeonline.com/blog/${slug}`,
-        siteName: "Jobs Home Online",
-        ...(post.updatedAt && {
-          modifiedTime: new Date(post.updatedAt).toISOString(),
-        }),
-      },
+  title: `${post.title} | Career Blog`,
+  description,
+  alternates: {
+    canonical: `https://jobshomeonline.com/blog/${slug}`,
+  },
+  openGraph: {
+  title: post.title,
+  description,
+  type: "article",
+  url: `https://jobshomeonline.com/blog/${slug}`,
+  siteName: "Jobs Home Online",
+  images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  ...(post.updatedAt && {
+    modifiedTime: new Date(post.updatedAt).toISOString(),
+  }),
+},
       twitter: {
         card: "summary_large_image",
         title: post.title,
@@ -106,17 +110,6 @@ export default async function BlogPostPage({
   }
 
   if (!post) notFound();
-
-// Auto-refresh updatedAt once per calendar day
-const today = new Date().toISOString().slice(0, 10);
-const lastUpdated = post.updatedAt
-  ? new Date(post.updatedAt as string).toISOString().slice(0, 10)
-  : null;
-
-if (lastUpdated !== today) {
-  await Blog.updateOne({ slug }, { $set: { updatedAt: new Date() } });
-  post.updatedAt = new Date();
-}
 
   const formattedDate = post.updatedAt ? formatDate(post.updatedAt) : null;
   const readTime = post.content ? getReadTime(post.content) : null;
@@ -207,18 +200,6 @@ if (lastUpdated !== today) {
               </div>
 
               <span aria-hidden className="text-gray-300 text-xs">·</span>
-
-              {formattedDate && (
-                <>
-                  <time
-                    dateTime={new Date(post.updatedAt!).toISOString()}
-                    className="text-xs text-gray-400"
-                  >
-                    Updated {formattedDate}
-                  </time>
-                  <span aria-hidden className="text-gray-300 text-xs">·</span>
-                </>
-              )}
 
               {readTime && (
                 <span className="text-xs text-gray-400">

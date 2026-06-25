@@ -1,5 +1,19 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
+export const metadata: Metadata = {
+  title: "FAQ | Jobs Home Online",
+  description: "Find answers to common questions about job listings, career advice, employers, and using Jobs Home Online.",
+  alternates: {
+    canonical: "https://jobshomeonline.com/faq",
+  },
+  openGraph: {
+    title: "FAQ | Jobs Home Online",
+    description: "Find answers to common questions about job listings, career advice, and using Jobs Home Online.",
+    url: "https://jobshomeonline.com/faq",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+};
 const faqs = [
   {
     category: "Job Seekers",
@@ -60,8 +74,26 @@ const faqs = [
 ];
 
 export default function FAQPage() {
+  const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.flatMap((section) =>
+    section.items.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.a,
+      },
+    }))
+  ),
+};
   return (
     <div className="bg-slate-50 min-h-screen">
+          <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+    />
 
       {/* Page header */}
       <div className="bg-white border-b border-slate-200">

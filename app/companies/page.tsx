@@ -1,15 +1,25 @@
+import Link from "next/link";
 export const metadata = {
   title: "Companies Hiring | Jobs Home Online",
   description: "Explore industries and company types actively hiring on Jobs Home Online.",
+  alternates: {
+    canonical: "https://jobshomeonline.com/companies",
+  },
+  openGraph: {
+    title: "Companies Hiring | Jobs Home Online",
+    description: "Explore industries and company types actively hiring on Jobs Home Online.",
+    url: "https://jobshomeonline.com/companies",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
 };
 
 const INDUSTRIES = [
-  { icon: "💻", label: "Tech & Engineering",  description: "Software firms, SaaS companies, and engineering teams hiring globally." },
-  { icon: "📣", label: "Marketing & Growth",  description: "Agencies, in-house teams, and startups looking for marketers and content creators." },
-  { icon: "🎨", label: "Design & Creative",   description: "Product studios, agencies, and brands hiring designers at every level." },
-  { icon: "📊", label: "Finance & Accounting", description: "Banks, fintechs, and enterprises with open finance and accounting roles." },
-  { icon: "🤝", label: "Customer Support",    description: "Remote-first companies building global support and success teams." },
-  { icon: "🌍", label: "Remote-First",        description: "Companies that hire fully distributed talent across time zones." },
+  { icon: "💻", label: "Tech & Engineering",  href: "/categories/tech",        description: "Software firms, SaaS companies, and engineering teams hiring globally." },
+  { icon: "📣", label: "Marketing & Growth",  href: "/categories/marketing",   description: "Agencies, in-house teams, and startups looking for marketers and content creators." },
+  { icon: "🎨", label: "Design & Creative",   href: "/categories/design",      description: "Product studios, agencies, and brands hiring designers at every level." },
+  { icon: "📊", label: "Finance & Accounting",href: "/categories/finance",     description: "Banks, fintechs, and enterprises with open finance and accounting roles." },
+  { icon: "🤝", label: "Customer Support",    href: "/categories/support",     description: "Remote-first companies building global support and success teams." },
+  { icon: "🌍", label: "Remote-First",        href: "/categories/remote",      description: "Companies that hire fully distributed talent across time zones." },
 ] as const;
 
 const TRUST_POINTS = [
@@ -44,14 +54,15 @@ export default function CompaniesPage() {
           <h2 className="text-base font-semibold text-gray-900 mb-6">Industries Represented</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {INDUSTRIES.map((item) => (
-              <div
-                key={item.label}
-                className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-3"
+                <Link
+                  href={item.href}
+                  key={item.label}
+                className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-3 hover:border-blue-300 transition-all"
               >
                 <span className="text-2xl">{item.icon}</span>
                 <h3 className="font-semibold text-gray-900 text-sm">{item.label}</h3>
                 <p className="text-xs text-gray-500 leading-relaxed">{item.description}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -79,7 +90,7 @@ export default function CompaniesPage() {
                 Browse all open positions — updated daily across every industry.
               </p>
             </div>
-            <a
+            <Link
               href="/jobs"
               className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-semibold text-sm rounded-lg px-6 py-3"
             >
@@ -87,7 +98,7 @@ export default function CompaniesPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
-            </a>
+            </Link>
           </div>
         </div>
 

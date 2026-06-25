@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import NewsletterSection from "./components/NewsletterSection";
@@ -7,14 +8,14 @@ import NewsletterSection from "./components/NewsletterSection";
 // ── CONSTANTS ────────────────────────────────────────────────────────────────
 
 const JOB_CATEGORIES = [
-  { label: "Remote",      href: "/jobs?type=remote",    color: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
-  { label: "Tech",        href: "/categories/tech",     color: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
-  { label: "Marketing",   href: "/jobs?cat=marketing",  color: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" },
-  { label: "Design",      href: "/categories/design",   color: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
-  { label: "Finance",     href: "/jobs?cat=finance",    color: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" },
-  { label: "Support",     href: "/jobs?cat=support",    color: "bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100" },
-  { label: "Part-Time",   href: "/jobs?type=part-time", color: "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100" },
-  { label: "Entry Level", href: "/jobs?level=entry",    color: "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100" },
+  { label: "Remote",      href: "/categories/remote",      color: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
+  { label: "Tech",        href: "/categories/tech",        color: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
+  { label: "Marketing",   href: "/categories/marketing",   color: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" },
+  { label: "Design",      href: "/categories/design",      color: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
+  { label: "Finance",     href: "/categories/finance",     color: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" },
+  { label: "Support",     href: "/categories/support",     color: "bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100" },
+  { label: "Part-Time",   href: "/categories/part-time",   color: "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100" },
+  { label: "Entry Level", href: "/categories/entry-level", color: "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100" },
 ] as const;
 
 const CAREER_TOPICS = [
@@ -91,10 +92,10 @@ function StatItem({
   started: boolean;
   delay: number;
 }) {
-  const numMatch = value.match(/^(\d+)(\+?)$/);
-  const isNumeric = !!numMatch;
-  const numTarget = numMatch ? parseInt(numMatch[1]) : 0;
-  const suffix = numMatch ? numMatch[2] : "";
+  const numMatch = value.match(/^([\d,]+)(\+?)$/);
+const isNumeric = !!numMatch;
+const numTarget = numMatch ? parseInt(numMatch[1].replace(/,/g, "")) : 0;
+const suffix = numMatch ? numMatch[2] : "";
   const count = useCountUp(numTarget, 1600 + delay, started && isNumeric);
 
   return (
@@ -175,11 +176,11 @@ export default function HomePageClient({ jobs = [], blogs = [] }: HomePageClient
   const latestBlogs = blogs.slice(1);
 
   const STATS = [
-    { value: "500+",   label: "Active Listings" },
-    { value: "100+",   label: "Career Articles" },
-    { value: "Global", label: "Reach" },
-    { value: "Free",   label: "Always Free" },
-  ];
+  { value: "10,000+", label: "Jobs Listed To Date" },
+  { value: "180+",    label: "Countries Reached" },
+  { value: "100+",    label: "Career Guides" },
+  { value: "Free",    label: "Always Free" },
+];
 
   return (
     <div className="bg-white text-gray-900 antialiased">
@@ -306,11 +307,12 @@ export default function HomePageClient({ jobs = [], blogs = [] }: HomePageClient
                 >
                   {/* Cover image */}
                   <div className="relative h-56 sm:h-64 overflow-hidden bg-slate-800">
-                    <img
+                    <Image
                       src={featured.coverImage ?? BLOG_IMAGES[0]}
                       alt={featured.title}
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 728px"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
                     {/* Accent badge over image */}
@@ -372,11 +374,12 @@ export default function HomePageClient({ jobs = [], blogs = [] }: HomePageClient
                         {/* Company avatar — uses logo if available, else colored initial */}
                         <div className="w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden">
                           {job.company?.logo ? (
-                            <img
+                            <Image
                               src={job.company.logo}
-                              alt={job.company.name}
-                              className="w-full h-full object-contain p-1"
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                              alt={job.company.name ?? "Company logo"}
+                              width={40}
+                              height={40}
+                              className="object-contain p-1"
                             />
                           ) : (
                             <span className="font-black text-gray-500 text-sm select-none">
@@ -477,11 +480,12 @@ export default function HomePageClient({ jobs = [], blogs = [] }: HomePageClient
                       >
                         {/* Image strip */}
                         <div className="relative h-36 overflow-hidden bg-gray-100">
-                          <img
+                          <Image
                             src={post.coverImage ?? BLOG_IMAGES[(i + 1) % BLOG_IMAGES.length]}
                             alt={post.title}
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            fill
+                            sizes="(max-width: 640px) 100vw, 50vw"
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         </div>
                         <div className="p-6 flex flex-col flex-1">
@@ -563,11 +567,12 @@ export default function HomePageClient({ jobs = [], blogs = [] }: HomePageClient
                     >
                       {/* Small image on each card */}
                       <div className="relative h-28 overflow-hidden bg-gray-100">
-                        <img
+                        <Image
                           src={post.coverImage ?? BLOG_IMAGES[(i + 3) % BLOG_IMAGES.length]}
                           alt={post.title}
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          fill
+                          sizes="(max-width: 640px) 100vw, 50vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       </div>
                       <div className="p-5">
@@ -640,12 +645,12 @@ export default function HomePageClient({ jobs = [], blogs = [] }: HomePageClient
               <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-gray-400 mb-4">Browse Job Types</p>
               <div className="space-y-0.5">
                 {[
-                  { label: "Remote Jobs",         href: "/jobs?type=remote" },
+                  { label: "Remote Jobs",          href: "/jobs?type=remote" },
                   { label: "Full-Time Positions",  href: "/jobs?type=full-time" },
                   { label: "Part-Time Roles",      href: "/jobs?type=part-time" },
                   { label: "Entry Level",          href: "/jobs?level=entry" },
                   { label: "Tech & Engineering",   href: "/categories/tech" },
-                  { label: "Marketing Roles",      href: "/jobs?cat=marketing" },
+                  { label: "Marketing Roles",      href: "/categories/marketing" },
                 ].map((item) => (
                   <Link
                     key={item.label}
@@ -678,12 +683,13 @@ export default function HomePageClient({ jobs = [], blogs = [] }: HomePageClient
                       className="group flex gap-3 border-b border-gray-100 pb-4 last:border-0 last:pb-0"
                     >
                       {/* Tiny thumbnail */}
-                      <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                        <img
+                      <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                        <Image
                           src={post.coverImage ?? BLOG_IMAGES[(i + 4) % BLOG_IMAGES.length]}
                           alt={post.title}
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          fill
+                          sizes="56px"
+                          className="object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       </div>
                       <div className="min-w-0">

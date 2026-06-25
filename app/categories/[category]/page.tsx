@@ -19,11 +19,14 @@ interface IJob {
 // Add entries here as you add new categories.
 
 const CATEGORY_META: Record<string, { label: string; description: string; icon: string }> = {
-  tech:      { label: "Tech & Engineering", icon: "💻", description: "Software, infrastructure, data, and engineering roles." },
-  design:    { label: "Design & Creative",  icon: "🎨", description: "UI/UX, graphic design, brand, and creative direction." },
-  marketing: { label: "Marketing",          icon: "📣", description: "Growth, content, SEO, paid media, and communications." },
-  finance:   { label: "Finance",            icon: "📊", description: "Accounting, analysis, banking, and financial planning." },
-  support:   { label: "Customer Support",   icon: "🤝", description: "Support, success, account management, and CX roles." },
+  tech:          { label: "Tech & Engineering", icon: "💻", description: "Software, infrastructure, data, and engineering roles." },
+  design:        { label: "Design & Creative",  icon: "🎨", description: "UI/UX, graphic design, brand, and creative direction." },
+  marketing:     { label: "Marketing",          icon: "📣", description: "Growth, content, SEO, paid media, and communications." },
+  finance:       { label: "Finance",            icon: "📊", description: "Accounting, analysis, banking, and financial planning." },
+  support:       { label: "Customer Support",   icon: "🤝", description: "Support, success, account management, and CX roles." },
+  remote:        { label: "Remote Jobs",        icon: "🌍", description: "Work from anywhere — fully remote jobs across all industries." },
+  "part-time":   { label: "Part-Time Jobs",     icon: "⏰", description: "Flexible part-time roles across tech, marketing, support and more." },
+  "entry-level": { label: "Entry Level Jobs",   icon: "🚀", description: "Start your career with entry-level roles across every industry." },
 };
 
 // ─── Metadata ────────────────────────────────────────────────────────────────
@@ -34,9 +37,12 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   const label = meta?.label ?? `${category} Jobs`;
 
   return {
-    title: `${label} | Jobs Home Online`,
-    description: meta?.description ?? `Browse the latest ${label} on Jobs Home Online.`,
-  };
+  title: `${label} | Jobs Home Online`,
+  description: meta?.description ?? `Browse the latest ${label} on Jobs Home Online.`,
+  alternates: {
+    canonical: `https://jobshomeonline.com/categories/${category}`,
+  },
+};
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -53,9 +59,10 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
 
   try {
     await connectMongo();
-    const raw = await Job.find({ category: categoryKey })
-      .sort({ createdAt: -1 })
-      .lean();
+    const raw = await Job.find({ category: { $regex: categoryKey, $options: "i" } })
+    .sort({ createdAt: -1 })
+    .limit(20)
+    .lean();
     jobs = raw.map((j: any) => ({ ...j, _id: j._id.toString() }));
   } catch (err) {
     console.error("CategoryPage DB error:", err);

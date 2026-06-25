@@ -13,7 +13,7 @@ const INTER_JOB_DELAY_MS       = 0;
 const INTER_COMPANY_DELAY_MS   = 0;
 const CIRCUIT_OPEN_DURATION_MS = 60 * 60 * 1000;
 const CIRCUIT_FAILURE_THRESHOLD = 2;
-const PAUSE_DURATION_MS        = 60 * 60 * 1000;
+const PAUSE_DURATION_MS        = 23 * 60 * 60 * 1000;
 const AI_TIMEOUT_MS            = 25_000;
 const MAX_JOB_AGE_MS           = 180 * 24 * 60 * 60 * 1000; // 6 months
 
@@ -464,32 +464,21 @@ export const COMPANIES: { slug: string; ats: "greenhouse" | "lever" | "workday" 
   { slug: "toptal", ats: "toptal" },
   { slug: "pipedrive", ats: "lever" },
   { slug: "mindtickle", ats: "lever" },
-  { slug: "accenture", ats: "workday" },
   { slug: "acquia", ats: "greenhouse" },
   { slug: "aha", ats: "greenhouse" },
-  { slug: "alight-solutions", ats: "workday" },
   { slug: "alphasights", ats: "greenhouse" },
-  { slug: "amazon", ats: "icims" },
   { slug: "appinio", ats: "greenhouse" },
   { slug: "arctouch", ats: "greenhouse" },
   { slug: "ark", ats: "greenhouse" },
-  { slug: "atlassian", ats: "workday" },
   { slug: "axios", ats: "greenhouse" },
   { slug: "c6bank", ats: "greenhouse" },
   { slug: "cabify", ats: "greenhouse" },
-  { slug: "cancom", ats: "workday" },
   { slug: "canonical", ats: "greenhouse" },
-  { slug: "capital-one", ats: "workday" },
   { slug: "civicactions", ats: "greenhouse" },
-  { slug: "clubhouse", ats: "shortcut" },
-  { slug: "cfpb", ats: "usajobs" },
   { slug: "coursera", ats: "greenhouse" },
-  { slug: "crossover", ats: "crossover" },
-  { slug: "cvs-health", ats: "workday" },
   { slug: "dashlane", ats: "greenhouse" },
   { slug: "datacamp", ats: "greenhouse" },
   { slug: "dropbox", ats: "greenhouse" },
-  { slug: "epam", ats: "workday" },
   { slug: "flip", ats: "greenhouse" },
   { slug: "godaddy", ats: "greenhouse" },
   { slug: "gohiring", ats: "greenhouse" },
@@ -497,7 +486,6 @@ export const COMPANIES: { slug: string; ats: "greenhouse" | "lever" | "workday" 
   { slug: "gympass", ats: "greenhouse" },
   { slug: "hudl", ats: "greenhouse" },
   { slug: "ifit", ats: "greenhouse" },
-  { slug: "iqvia", ats: "workday" },
   { slug: "juno", ats: "greenhouse" },
   { slug: "jusbrasil", ats: "greenhouse" },
   { slug: "kentik", ats: "greenhouse" },
@@ -509,31 +497,22 @@ export const COMPANIES: { slug: string; ats: "greenhouse" | "lever" | "workday" 
   { slug: "metalab", ats: "greenhouse" },
   { slug: "mixmax", ats: "greenhouse" },
   { slug: "mozilla", ats: "greenhouse" },
-  { slug: "nationwide", ats: "workday" },
-  { slug: "netapp", ats: "workday" },
   { slug: "oddball", ats: "greenhouse" },
   { slug: "openzeppelin", ats: "greenhouse" },
-  { slug: "oracle", ats: "taleo" },
-  { slug: "pnc-financial-services", ats: "workday" },
   { slug: "praxent", ats: "greenhouse" },
-  { slug: "pricewaterhousecoopers", ats: "workday" },
   { slug: "quintoandar", ats: "greenhouse" },
   { slug: "raft", ats: "greenhouse" },
   { slug: "reddit", ats: "greenhouse" },
-  { slug: "salesforce", ats: "workday" },
   { slug: "scandit", ats: "greenhouse" },
   { slug: "securityscorecard", ats: "greenhouse" },
   { slug: "squad", ats: "greenhouse" },
-  { slug: "telefonica", ats: "workday" },
   { slug: "thorn", ats: "greenhouse" },
   { slug: "toast", ats: "greenhouse" },
   { slug: "turing", ats: "greenhouse" },
   { slug: "udacity", ats: "greenhouse" },
   { slug: "upwork", ats: "greenhouse" },
-  { slug: "usaa", ats: "workday" },
   { slug: "valtech", ats: "greenhouse" },
   { slug: "vtex", ats: "greenhouse" },
-  { slug: "wells-fargo", ats: "workday" },
   { slug: "wizeline", ats: "greenhouse" },
   { slug: "zenrows", ats: "greenhouse" },
   { slug: "amplitude", ats: "greenhouse" },
@@ -583,16 +562,13 @@ export const COMPANIES: { slug: string; ats: "greenhouse" | "lever" | "workday" 
   { slug: "planable", ats: "greenhouse" },
   { slug: "calendly", ats: "greenhouse" },
   { slug: "pandadoc", ats: "greenhouse" },
-  { slug: "ringcentral", ats: "workday" },
   { slug: "five9", ats: "greenhouse" },
   { slug: "nice", ats: "greenhouse" },
   { slug: "salesloft", ats: "greenhouse" },
   { slug: "pendo", ats: "greenhouse" },
-  { slug: "servicenow", ats: "workday" },
   { slug: "make", ats: "greenhouse" },
   { slug: "squarespace", ats: "greenhouse" },
   { slug: "justworks", ats: "greenhouse" },
-  { slug: "navient", ats: "workday" },
   { slug: "betterment", ats: "greenhouse" },
   { slug: "sofi", ats: "greenhouse" },
   { slug: "current", ats: "greenhouse" },
@@ -608,7 +584,6 @@ export const COMPANIES: { slug: string; ats: "greenhouse" | "lever" | "workday" 
   { slug: "classpass", ats: "greenhouse" },
   { slug: "mindbody", ats: "greenhouse" },
   { slug: "peloton", ats: "greenhouse" },
-  { slug: "expedia", ats: "workday" },
   { slug: "tripadvisor", ats: "greenhouse" },
   { slug: "getyourguide", ats: "greenhouse" },
   // ADD YOUR COMPANIES ARRAY HERE
@@ -655,7 +630,7 @@ async function processJob(job: any, ats: "greenhouse" | "lever" | "workday" | "a
     postedAt: job.postedAt,
     updatedAt: new Date(),
     category: normalizeCategory(((job as any).category ?? "").replace(/^\d+\s+/, "").trim()),
-    score: Math.random(),
+    score: job.postedAt ? new Date(job.postedAt).getTime() : Date.now(),
     salary: extractSalary(rawText),
   };
 
@@ -669,24 +644,20 @@ async function processJob(job: any, ats: "greenhouse" | "lever" | "workday" | "a
 // MAIN HANDLER
 // ════════════════════════════════════════════════════════════════════
 export async function GET(request: Request) {
+  const auth = request.headers.get("authorization");
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const runStart = Date.now();
   try {
     await connectMongo();
 
-    let settings = await Settings.findOne({ key: "groqConfig" });
-    if (!settings) settings = await Settings.create({ key: "groqConfig", modelIndex: 0 });
-
-    if (settings.paused) {
-      const elapsed = Date.now() - (settings.pausedAt?.getTime() ?? 0);
-      if (elapsed < PAUSE_DURATION_MS) {
-        const remainingMins = Math.ceil((PAUSE_DURATION_MS - elapsed) / 60000);
-        log(`Paused — resumes in ~${remainingMins} min`);
-        return NextResponse.json({ success: false, paused: true, resumesIn: `${remainingMins} minutes` });
-      }
-      log(`⏰ Pause over — resuming`);
-      settings.paused = false;
+      let settings = await Settings.findOne({ key: "groqConfig" });
+      if (!settings) settings = await Settings.create({ key: "groqConfig", modelIndex: 0 });
+      circuits.clear();
+        settings.paused = false;
+        settings.pausedAt = null;
       await settings.save();
-    }
 
     const url = new URL(request.url);
     const startIndex = settings.lastCompanyIndex ?? 0;
@@ -764,7 +735,7 @@ export async function GET(request: Request) {
       return `${provider}/${model.split("/").pop()}:${s?.openUntil && Date.now() < s.openUntil ? "OPEN" : "ok"}`;
     }).join(" | ")}`);
 
-    return NextResponse.json({ success: true, paused: pausedThisRun, total, imported, updated, skipped, failed, elapsedSeconds: elapsed });
+      return NextResponse.json({ success: true, paused: pausedThisRun, total, imported, updated, skipped, failed, elapsedSeconds: elapsed });
   } catch (err) {
     return NextResponse.json({ success: false, error: err instanceof Error ? err.message : "Unknown" }, { status: 500 });
   }

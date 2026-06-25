@@ -57,14 +57,14 @@ const icons: Record<string, React.ReactNode> = {
 // ─── Static config ────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { label: "Tech & Engineering", iconKey: "tech",      description: "Software, infrastructure, data, and engineering roles.", href: "/categories/tech",      color: "bg-violet-50 border-violet-100 text-violet-700" },
-  { label: "Design & Creative",  iconKey: "design",    description: "UI/UX, graphic design, brand, and creative direction.",  href: "/categories/design",    color: "bg-amber-50 border-amber-100 text-amber-700" },
-  { label: "Marketing",          iconKey: "marketing", description: "Growth, content, SEO, paid media, and communications.", href: "/jobs?cat=marketing",   color: "bg-rose-50 border-rose-100 text-rose-700" },
-  { label: "Finance",            iconKey: "finance",   description: "Accounting, analysis, banking, and financial planning.", href: "/jobs?cat=finance",     color: "bg-emerald-50 border-emerald-100 text-emerald-700" },
-  { label: "Customer Support",   iconKey: "support",   description: "Support, success, account management, and CX roles.",   href: "/jobs?cat=support",     color: "bg-sky-50 border-sky-100 text-sky-700" },
-  { label: "Remote Jobs",        iconKey: "remote",    description: "Fully remote positions across all industries.",          href: "/jobs?type=remote",     color: "bg-blue-50 border-blue-100 text-blue-700" },
-  { label: "Part-Time",          iconKey: "parttime",  description: "Flexible part-time roles for every career stage.",      href: "/jobs?type=part-time",  color: "bg-orange-50 border-orange-100 text-orange-700" },
-  { label: "Entry Level",        iconKey: "entry",     description: "Roles open to candidates early in their careers.",      href: "/jobs?level=entry",     color: "bg-teal-50 border-teal-100 text-teal-700" },
+  { label: "Tech & Engineering", iconKey: "tech",      description: "Software, infrastructure, data, and engineering roles.", href: "/categories/tech",        color: "bg-violet-50 border-violet-100 text-violet-700" },
+  { label: "Design & Creative",  iconKey: "design",    description: "UI/UX, graphic design, brand, and creative direction.",  href: "/categories/design",      color: "bg-amber-50 border-amber-100 text-amber-700" },
+  { label: "Marketing",          iconKey: "marketing", description: "Growth, content, SEO, paid media, and communications.", href: "/categories/marketing",   color: "bg-rose-50 border-rose-100 text-rose-700" },
+  { label: "Finance",            iconKey: "finance",   description: "Accounting, analysis, banking, and financial planning.", href: "/categories/finance",     color: "bg-emerald-50 border-emerald-100 text-emerald-700" },
+  { label: "Customer Support",   iconKey: "support",   description: "Support, success, account management, and CX roles.",   href: "/categories/support",     color: "bg-sky-50 border-sky-100 text-sky-700" },
+  { label: "Remote Jobs",        iconKey: "remote",    description: "Fully remote positions across all industries.",          href: "/categories/remote",      color: "bg-blue-50 border-blue-100 text-blue-700" },
+  { label: "Part-Time",          iconKey: "parttime",  description: "Flexible part-time roles for every career stage.",      href: "/categories/part-time",   color: "bg-orange-50 border-orange-100 text-orange-700" },
+  { label: "Entry Level",        iconKey: "entry",     description: "Roles open to candidates early in their careers.",      href: "/categories/entry-level", color: "bg-teal-50 border-teal-100 text-teal-700" },
 ] as const;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

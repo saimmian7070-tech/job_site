@@ -82,9 +82,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const job = (await Job.findOne({ slug }).lean()) as IJob | null;
     if (!job) return { title: "Job Not Found | Jobs Home Online" };
     return {
-      title: `${job.title}${job.company?.name ? ` at ${job.company.name}` : ""} | Jobs Home Online`,
-      description: cleanText(job.description)?.slice(0, 160),
-    };
+  title: `${job.title}${job.company?.name ? ` at ${job.company.name}` : ""} | Jobs Home Online`,
+  description: cleanText(job.description)?.slice(0, 160),
+  alternates: {
+    canonical: `https://jobshomeonline.com/jobs/${slug}`,
+  },
+  openGraph: {
+    title: `${job.title}${job.company?.name ? ` at ${job.company.name}` : ""}`,
+    description: cleanText(job.description)?.slice(0, 160) ?? "",
+    url: `https://jobshomeonline.com/jobs/${slug}`,
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+};
+
   } catch {
     return { title: "Jobs Home Online" };
   }
@@ -321,14 +331,14 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
                 <Link href="/jobs" className="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
                   All Jobs <span className="text-gray-300">→</span>
                 </Link>
-                <Link href="/jobs?type=remote" className="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                <Link href="/categories/remote" className="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
                   Remote Jobs <span className="text-gray-300">→</span>
                 </Link>
-                <Link href="/jobs?type=full-time" className="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
-                  Full-Time Jobs <span className="text-gray-300">→</span>
+                <Link href="/categories/tech" className="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                  Tech Jobs <span className="text-gray-300">→</span>
                 </Link>
-                <Link href="/jobs?type=contract" className="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
-                  Contract Jobs <span className="text-gray-300">→</span>
+                <Link href="/categories/marketing" className="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                  Marketing Jobs <span className="text-gray-300">→</span>
                 </Link>
               </div>
             </div>

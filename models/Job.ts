@@ -20,6 +20,7 @@ export interface IJob extends Document {
   isFeatured?: boolean;
   category?: string;
   expiresAt?: Date;
+  score?: number;
   postedAt: Date;
   updatedAt: Date;
 }
@@ -39,13 +40,15 @@ const JobSchema: Schema<IJob> = new Schema({
   jobType: { type: String },
   applyUrl: { type: String },
   salary: { type: String, default: "" },
-  source: { type: String, default: "jsearch" },
+  source: { type: String, default: "imported" },
   isActive: { type: Boolean, default: true },
   isFeatured: { type: Boolean, default: false },
   category: { type: String },
   expiresAt: { type: Date },
+  score: { type: Number, default: 0 },
   postedAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+  
 });
 
 JobSchema.index({ isActive: 1, postedAt: -1 });

@@ -29,7 +29,7 @@ export default function NewsletterSection() {
           Free · No Spam · Unsubscribe Anytime
         </span>
 
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+        <h2 id="newsletter" className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
           Stay ahead of the job market
         </h2>
 

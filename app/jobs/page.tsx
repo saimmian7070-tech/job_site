@@ -938,9 +938,9 @@ function pageHref(p: number) {
                   jobs found */}
 
                   <span style={{ fontSize: 15, fontWeight: 700, color: "#2563EB" }}>
-  {totalJobs.toLocaleString()}
-</span>{" "}
-jobs found
+                {(Math.floor(totalJobs / 100) * 100).toLocaleString()}+
+                </span>{" "}
+                jobs found
 
 
                   {totalPages > 1 && (

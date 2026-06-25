@@ -255,22 +255,18 @@ export default async function JobPage({ params }: { params: Promise<{ slug: stri
             )}
 
             {/* Bottom apply CTA */}
-            {job.applyUrl && (
-              <div className="mt-6 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <p className="text-white font-bold text-base">Interested in this role?</p>
-                  <p className="text-blue-100 text-sm mt-0.5">Take the next step and submit your application today.</p>
-                </div>
-                <a
-                  href={job.applyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-blue-50 text-blue-700 font-bold text-sm rounded-xl shadow-sm transition-all"
-                >
-                  Apply Now →
-                </a>
+            <div className="mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <p className="text-slate-900 font-bold text-base">Looking for more opportunities?</p>
+                <p className="text-slate-500 text-sm mt-0.5">Browse thousands of roles across every industry — updated daily.</p>
               </div>
-            )}
+              <Link
+                href="/jobs"
+                className="shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all"
+              >
+                Browse All Jobs →
+              </Link>
+            </div>
           </div>
 
           {/* Right: Sidebar */}

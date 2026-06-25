@@ -1326,13 +1326,14 @@ jobs found
                                 borderRadius: 6,
                                 fontSize: 11,
                                 fontWeight: 700,
-                                whiteSpace: "nowrap",
                                 background: "#F0FDF4",
                                 color: "#166534",
                                 border: "1px solid #BBF7D0",
-                                maxWidth: "140px",
+                                maxWidth: "130px",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                flexShrink: 1,
                               }}>
                                 💰 {job.salary}
                               </span>

@@ -1336,7 +1336,7 @@ jobs found
                                 whiteSpace: "nowrap",
                                 flexShrink: 1,
                               }}>
-                                💰 {job.salary}
+                                💰 {job.salary.replace(/\s*(per year|\/yr|\/year|annually)/gi, "").trim()}
                               </span>
                             )}
                             </div>

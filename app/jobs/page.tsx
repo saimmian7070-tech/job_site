@@ -1258,7 +1258,8 @@ jobs found
                                 alignItems: "center",
                                 gap: 5,
                                 flexWrap: "wrap",
-                                flexShrink: 0,
+                                flexShrink: 1,
+                                minWidth: 0,
                               }}
                             >
                               {job.location && (

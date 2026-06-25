@@ -1275,9 +1275,6 @@ jobs found
                                   background: "#F9FAFB",
                                   border: "1px solid #E5E7EB",
                                   whiteSpace: "nowrap",
-                                  maxWidth: "150px",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
                                 }}>
                                   <svg
                                     width="10"
@@ -1330,9 +1327,6 @@ jobs found
                                 background: "#F0FDF4",
                                 color: "#166534",
                                 border: "1px solid #BBF7D0",
-                                maxWidth: "130px",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
                                 flexShrink: 1,
                               }}>

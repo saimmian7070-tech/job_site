@@ -1262,21 +1262,22 @@ jobs found
                               }}
                             >
                               {job.location && (
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 4,
-                                    padding: "4px 9px",
-                                    borderRadius: 6,
-                                    fontSize: 11,
-                                    fontWeight: 500,
-                                    color: "#6B7280",
-                                    background: "#F9FAFB",
-                                    border: "1px solid #E5E7EB",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                <span style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  padding: "4px 9px",
+                                  borderRadius: 6,
+                                  fontSize: 11,
+                                  fontWeight: 500,
+                                  color: "#6B7280",
+                                  background: "#F9FAFB",
+                                  border: "1px solid #E5E7EB",
+                                  whiteSpace: "nowrap",
+                                  maxWidth: "150px",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}>
                                   <svg
                                     width="10"
                                     height="10"

@@ -42,7 +42,10 @@ function cleanText(str?: string): string {
 }
 
 function cleanLocation(loc?: string): string {
-  return loc?.replace(/,\s*$/, "").trim() ?? "";
+  if (!loc) return "";
+  // If multiple locations separated by semicolons, take only the first one
+  const first = loc.split(";")[0];
+  return first.replace(/,\s*$/, "").trim();
 }
 
 function initials(name?: string) {

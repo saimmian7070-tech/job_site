@@ -24,7 +24,6 @@ export default async function sitemap() {
     { url: `${baseUrl}/blog`,        priority: 0.9, changeFrequency: "daily"   as const },
     { url: `${baseUrl}/categories`,  priority: 0.8, changeFrequency: "weekly"  as const },
     { url: `${baseUrl}/companies`,   priority: 0.8, changeFrequency: "weekly"  as const },
-    { url: `${baseUrl}/locations`,   priority: 0.8, changeFrequency: "weekly"  as const },
     { url: `${baseUrl}/about`,       priority: 0.6, changeFrequency: "monthly" as const },
     { url: `${baseUrl}/contact`,     priority: 0.6, changeFrequency: "monthly" as const },
     { url: `${baseUrl}/privacy`,     priority: 0.5, changeFrequency: "monthly" as const },
@@ -87,32 +86,14 @@ const blogUrls = (blogs as any[]).filter((post) => typeof post.slug === "string"
     priority: 0.5,
   }));
 
-  // ✅ Dynamic locations — unique slugified locations from active jobs
-  const uniqueLocations = [
-    ...new Set(
-      jobs
-        .map((job: any) => job.location)
-        .filter((loc: any) => typeof loc === "string")
-        .map((loc: string) => slugify(loc))
-    ),
-  ] as string[];
-
-  const locationUrls = uniqueLocations.map((loc) => ({
-    url: `${baseUrl}/locations/${loc}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.5,
-  }));
-
   // ✅ Merge all and remove duplicate URLs
   const allUrls = [
-    ...staticPages,
-    ...jobUrls,
-    ...blogUrls,
-    ...categoryUrls,
-    ...companyUrls,
-    ...locationUrls,
-  ];
+  ...staticPages,
+  ...jobUrls,
+  ...blogUrls,
+  ...categoryUrls,
+  ...companyUrls,
+];
 
   const seen = new Set<string>();
   return allUrls.filter(({ url }) => {

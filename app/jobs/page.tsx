@@ -27,11 +27,7 @@ const JOB_TYPES = [
   "All types",
   "Remote",
   "Full-Time",
-  "Part-Time",
   "Contract",
-  "Freelance",
-  "Internship",
-  "Entry Level",
 ];
 
 function initials(name?: string) {
@@ -104,9 +100,6 @@ const limit = 20;
 
 let jobs: IJob[] = [];
 let totalJobs = 0;
-let remoteCount = 0;
-let engineeringCount = 0;
-let todayCount = 0;
 let typeCountMap: Record<string, number> = {};
 let categoryCountMap: Record<string, number> = {};
 
@@ -125,10 +118,6 @@ try {
   categoryCounts.forEach((c: any) => {
     if (c._id != null) categoryCountMap[String(c._id)] = c.count;
   });
-
-  remoteCount = await Job.countDocuments({ jobType: { $regex: "remote", $options: "i" } });
-  engineeringCount = await Job.countDocuments({ category: { $regex: "engineer", $options: "i" } });
-  todayCount = await Job.countDocuments({ postedAt: { $gte: new Date(new Date().setHours(0,0,0,0)) } });
 
   const andClauses: any[] = [];
 
@@ -237,6 +226,8 @@ function pageHref(p: number) {
         background: "#F0F2F5",
         fontFamily:
           '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          overflowX: "hidden",    
+          maxWidth: "100vw",    
       }}
     >
       {/* Global hover styles for job cards — no client JS needed */}
@@ -252,6 +243,7 @@ function pageHref(p: number) {
         style={{
           background: "#FFFFFF",
           borderBottom: "1px solid #E5E7EB",
+            overflow: "hidden",
         }}
       >
         <div
@@ -288,114 +280,12 @@ function pageHref(p: number) {
               </h1>
               <p style={{ fontSize: 13, color: "#6B7280", margin: 0 }}>
                 {totalJobs > 0
-                  ? `${(Math.floor(totalJobs / 100) * 100).toLocaleString()}+ open positions across tech, design, marketing, finance and more.`
+                  ? `${totalJobs < 100 ? totalJobs : (Math.floor(totalJobs / 100) * 100).toLocaleString() + "+"} open positions across tech, design, marketing, finance and more.`
                   : "Remote and global opportunities across every industry — apply in one click."}
-                  
-
               </p>
+              
             </div>
-
-            {/* KPI stats */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 24,
-                flexShrink: 0,
-              }}
-            >
-              <div style={{ textAlign: "right" }}>
-                <p
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 800,
-                    color: "#111827",
-                    margin: "0 0 2px",
-                    letterSpacing: "-0.3px",
-                  }}
-                >
-                  
-                  {remoteCount} 
-                
-                </p>
-                <p
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: "#9CA3AF",
-                    margin: 0,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  Remote roles
-                </p>
-              </div>
-              <div
-                style={{
-                  width: 1,
-                  height: 32,
-                  background: "#E5E7EB",
-                }}
-              />
-              <div style={{ textAlign: "right" }}>
-                <p
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 800,
-                    color: "#111827",
-                    margin: "0 0 2px",
-                    letterSpacing: "-0.3px",
-                  }}
-                >
-                  {engineeringCount}
-                </p>
-                <p
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: "#9CA3AF",
-                    margin: 0,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  Engineering
-                </p>
-              </div>
-              <div
-                style={{
-                  width: 1,
-                  height: 32,
-                  background: "#E5E7EB",
-                }}
-              />
-              <div style={{ textAlign: "right" }}>
-                <p
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 800,
-                    color: "#16A34A",
-                    margin: "0 0 2px",
-                    letterSpacing: "-0.3px",
-                  }}
-                >
-                  +{todayCount}
-                </p>
-                <p
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: "#9CA3AF",
-                    margin: 0,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  Added today
-                </p>
-              </div>
-            </div>
+            
           </div>
 
           {/* Search bar */}
@@ -597,7 +487,7 @@ function pageHref(p: number) {
               marginTop: 16,
               paddingTop: 16,
               borderTop: "1px solid #E5E7EB",
-              overflowX: "auto",
+              overflowX: "hidden",
               flexWrap: "nowrap",
             }}
             role="tablist"
@@ -712,9 +602,7 @@ function pageHref(p: number) {
                 {[
                   { label: "Full-Time",  count: typeCountMap["full-time"]  ?? 0 },
                   { label: "Remote",     count: typeCountMap["remote"]     ?? 0 },
-                  { label: "Part-Time",  count: typeCountMap["part-time"]  ?? 0 },
                   { label: "Contract",   count: typeCountMap["contract"]   ?? 0 },
-                  { label: "Internship", count: typeCountMap["internship"] ?? 0 },
                 ].map((item) => {
                   const isChecked = item.label.toLowerCase() === jobType;
                   return (
@@ -876,35 +764,7 @@ function pageHref(p: number) {
 
         {/* ── MAIN FEED ──────────────────────────────────────────────── */}
         <main aria-label="Job listings" style={{ flex: 1, minWidth: 0 }}>
-          {process.env.NODE_ENV === "development" && (
-          <div style={{
-            marginBottom: 16,
-            padding: "12px 16px",
-            background: "#0F172A",
-            borderRadius: 10,
-            border: "1px solid #334155",
-            fontFamily: "monospace",
-          }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              🛠 Dev — categoryCountMap keys
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {Object.entries(categoryCountMap).map(([k, v]) => (
-                <span key={k} style={{
-                  fontSize: 11,
-                  fontFamily: "monospace",
-                  background: "#1E293B",
-                  color: "#7DD3FC",
-                  border: "1px solid #334155",
-                  borderRadius: 5,
-                  padding: "3px 8px",
-                }}>
-                  {k} <span style={{ color: "#64748B" }}>·</span> <span style={{ color: "#86EFAC" }}>{v}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+          
           {/* Result count + sort + active filters */}
           <div
             style={{
@@ -938,7 +798,7 @@ function pageHref(p: number) {
                   jobs found */}
 
                   <span style={{ fontSize: 15, fontWeight: 700, color: "#2563EB" }}>
-                {(Math.floor(totalJobs / 100) * 100).toLocaleString()}+
+                {totalJobs < 100 ? totalJobs : (Math.floor(totalJobs / 100) * 100).toLocaleString() + "+"}
                 </span>{" "}
                 jobs found
 
@@ -1010,25 +870,6 @@ function pageHref(p: number) {
               )}
             </div>
 
-            {/* Sort */}
-            <select
-              aria-label="Sort jobs by"
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: "#374151",
-                border: "1px solid #E5E7EB",
-                borderRadius: 7,
-                padding: "6px 10px",
-                background: "#FFFFFF",
-                cursor: "pointer",
-                outline: "none",
-              }}
-            >
-              <option>Most recent</option>
-              <option>Most relevant</option>
-              <option>Salary: high to low</option>
-            </select>
           </div>
 
           {/* Empty state */}
@@ -1260,22 +1101,23 @@ function pageHref(p: number) {
                                 flexWrap: "wrap",
                                 flexShrink: 1,
                                 minWidth: 0,
+                                maxWidth: "100%",
                               }}
                             >
-                              {job.location && (
-                                <span style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 4,
-                                  padding: "4px 9px",
-                                  borderRadius: 6,
-                                  fontSize: 11,
-                                  fontWeight: 500,
-                                  color: "#6B7280",
-                                  background: "#F9FAFB",
-                                  border: "1px solid #E5E7EB",
-                                  whiteSpace: "nowrap",
-                                }}>
+                                {job.location && !job.location.toLowerCase().includes("remote") && (
+                                  <span style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 4,
+                                    padding: "4px 9px",
+                                    borderRadius: 6,
+                                    fontSize: 11,
+                                    fontWeight: 500,
+                                    color: "#6B7280",
+                                    background: "#F9FAFB",
+                                    border: "1px solid #E5E7EB",
+                                    whiteSpace: "normal",
+                                  }}>
                                   <svg
                                     width="10"
                                     height="10"
@@ -1284,6 +1126,7 @@ function pageHref(p: number) {
                                     stroke="#9CA3AF"
                                     strokeWidth={2}
                                     aria-hidden="true"
+                                    style={{ flexShrink: 0, alignSelf: "flex-start", marginTop: 2 }}  // ADD THIS
                                   >
                                     <path
                                       strokeLinecap="round"
@@ -1296,7 +1139,11 @@ function pageHref(p: number) {
                                       d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                                     />
                                   </svg>
-                                  {job.location}
+                                  {(() => {
+                                  const parts = job.location!.split(";").map(l => l.trim());
+                                  if (parts.length <= 1) return job.location;
+                                  return `${parts[0]} & ${parts.length - 1} more`;
+                                })()}
                                 </span>
                               )}
                               {job.jobType && pill && (

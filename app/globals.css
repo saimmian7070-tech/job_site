@@ -9,3 +9,10 @@ body {
   color: #2563eb;
   text-decoration: underline;
 }
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+* {
+  box-sizing: border-box;
+}

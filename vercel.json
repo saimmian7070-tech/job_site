@@ -1,19 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/import-jobs",
+      "path": "/api/cron/run-all",
       "schedule": "0 0 * * *"
     }
-  ],
-  "headers": [
-    {
-      "source": "/api/cron/(.*)",
-      "headers": [
-        {
-          "key": "Authorization",
-          "value": "Bearer jobshomeonline2026secure"
-        }
-      ]
-    }
   ]
-}
+} 

@@ -357,7 +357,6 @@ async function fetchLever(slug: string): Promise<any[]> {
 // ════════════════════════════════════════════════════════════════════
 export const COMPANIES: { slug: string; ats: "greenhouse" | "lever" | "workday" | "ashby" | "icims" |
    "taleo" | "usajobs" | "crossover" | "toptal" | "shortcut" | "zendesk" }[] = [
-  { slug: "stripe", ats: "greenhouse" },
   { slug: "airbnb", ats: "greenhouse" },
   { slug: "figma", ats: "greenhouse" },
   { slug: "twilio", ats: "greenhouse" },
